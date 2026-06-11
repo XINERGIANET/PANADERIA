@@ -414,8 +414,8 @@ class SaleController extends Controller
 
         // Datos del emisor (tu empresa)
         $ruc = config('ruc.number');
-        $name = 'MUSAS PASTELERIA S.R.L.';
-        $address = 'AV. JOSE BALTA NRO. 054 P.J. CHINO ZAMORA CHICLAYO CHICLAYO LAMBAYEQUE';
+        $name = 'CUSTODIO CHAVESTA JAIME';
+        $address = 'MZ. C LOTE. 19 URB. EL AMAUTA (COSTADO LOS PINOS DE LA PLATA) CHICLAYO CHICLAYO LAMBAYEQUE';
 
         $client = optional($sale->client);
 
