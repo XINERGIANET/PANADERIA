@@ -46,6 +46,12 @@ $invoices_enabled = auth()->user()->location->invoices_enabled == 1;
                                 <input type="text" class="form-control form-control-sm" id="client" name="client">
                             </div>
                         </div>
+                        <div class="mb-2 row">
+                            <label class="col-form-label text-start"><strong>Dirección</strong></label>
+                            <div class="col-sm-12">
+                                <input type="text" class="form-control form-control-sm" id="direccion" name="direccion">
+                            </div>
+                        </div>
                         
                         <div class="d-none">
                             <div class="d-flex mb-3">
@@ -70,10 +76,6 @@ $invoices_enabled = auth()->user()->location->invoices_enabled == 1;
     
                                 <label class="mb-2"><strong>Teléfono</strong></label>
                                 <input type="text" id="telefono" name="telefono"
-                                    class="form-control form-control-sm mb-4">
-    
-                                <label class="mb-2"><strong>Dirección</strong></label>
-                                <input type="text" id="direccion" name="direccion"
                                     class="form-control form-control-sm mb-4">
                             </div>
                         </div>
