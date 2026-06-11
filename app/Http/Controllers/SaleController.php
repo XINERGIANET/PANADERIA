@@ -145,6 +145,23 @@ class SaleController extends Controller
             ], 422);
         }
 
+        if ($request->voucher_type === 'Factura') {
+            $rucValidation = $this->validarRucFactura($request->document, $request->client);
+
+            if (!$rucValidation['status']) {
+                return response()->json([
+                    'status' => false,
+                    'errors' => [
+                        'document' => [$rucValidation['console']]
+                    ]
+                ], 422);
+            }
+
+            $request->merge([
+                'client' => $rucValidation['razon_social']
+            ]);
+        }
+
         try {
             $response = DB::transaction(function () use ($request) {
 
@@ -158,15 +175,31 @@ class SaleController extends Controller
 
                     if ($clienteEncontrado) {
                         $cliente_id = $clienteEncontrado->id;
-                        $cliente_nombre = $clienteEncontrado->nombre;
+                        $cliente_nombre = $clienteEncontrado->business_name
+                            ?? $clienteEncontrado->contact_name
+                            ?? $clienteEncontrado->name
+                            ?? $request->client
+                            ?? 'varios';
+
+                        $clienteEncontrado->update([
+                            'business_name' => $request->voucher_type === 'Factura' ? ($request->client ?: $cliente_nombre) : $clienteEncontrado->business_name,
+                            'contact_name' => $request->voucher_type === 'Factura' ? ($clienteEncontrado->contact_name ?: $request->client) : $clienteEncontrado->contact_name,
+                            'document' => $documento,
+                            'deleted' => $clienteEncontrado->deleted ?? 0,
+                        ]);
                     } else {
                         $nuevoCliente = Client::create([
+                            'business_name' => $request->voucher_type === 'Factura' ? $request->client : null,
+                            'contact_name' => $request->voucher_type === 'Factura' ? $request->client : null,
                             'document' => $documento,
-                            'nombre' => $request->client,
-                            'estado' => 0
+                            'deleted' => 0
                         ]);
                         $cliente_id = $nuevoCliente->id;
-                        $cliente_nombre = $nuevoCliente->nombre;
+                        $cliente_nombre = $nuevoCliente->business_name
+                            ?? $nuevoCliente->contact_name
+                            ?? $nuevoCliente->name
+                            ?? $request->client
+                            ?? 'varios';
                     }
                 } else {
                     // Si no hay documento pero el usuario ingresó un nombre, usar ese nombre
@@ -424,6 +457,33 @@ class SaleController extends Controller
         $address = $company['address'];
 
         $client = optional($sale->client);
+        $customerDocument = preg_replace('/\D+/', '', (string) ($client->document ?? ''));
+        $customerName = trim((string) (
+            $client->business_name
+            ?? $client->contact_name
+            ?? $client->name
+            ?? $sale->client_name
+            ?? 'CLIENTE VARIOS'
+        ));
+
+        if ($sale->voucher_type === 'Factura') {
+            if (!preg_match('/^\d{11}$/', $customerDocument)) {
+                return [
+                    'status' => false,
+                    'console' => 'La factura requiere un RUC válido de 11 dígitos asociado al cliente.'
+                ];
+            }
+
+            $rucValidation = $this->validarRucFactura($customerDocument, $customerName);
+            if (!$rucValidation['status']) {
+                return [
+                    'status' => false,
+                    'console' => $rucValidation['console']
+                ];
+            }
+
+            $customerName = $rucValidation['razon_social'];
+        }
 
         $type = $cat['InvoiceTypeCode'];
         $serie = $cat['serie'];
@@ -502,11 +562,13 @@ class SaleController extends Controller
                         'cac:PartyIdentification' => [
                             'cbc:ID' => [
                                 '_attributes' => ['schemeID' => $cat['PartyIdentification']],
-                                '_text' => $client->ruc_dni ?? '00000000'
+                                '_text' => $sale->voucher_type === 'Factura'
+                                    ? $customerDocument
+                                    : ($customerDocument !== '' ? $customerDocument : '00000000')
                             ]
                         ],
                         'cac:PartyLegalEntity' => [
-                            'cbc:RegistrationName' => ['_text' => $client->business_name ?? 'CLIENTE VARIOS']
+                            'cbc:RegistrationName' => ['_text' => $customerName !== '' ? $customerName : 'CLIENTE VARIOS']
                         ]
                     ]
                 ],
@@ -911,15 +973,94 @@ class SaleController extends Controller
         $candidates = [
             ['path' => base_path('assets/icon/xinergia.jpeg'), 'mime' => 'image/jpeg'],
             ['path' => base_path('assets/icon/xinergia.jpg'), 'mime' => 'image/jpeg'],
-            ['path' => base_path('assets/icon/logo.svg'), 'mime' => 'image/svg+xml'],
             ['path' => public_path('assets/icon/xinergia.jpeg'), 'mime' => 'image/jpeg'],
             ['path' => public_path('assets/icon/xinergia.jpg'), 'mime' => 'image/jpeg'],
-            ['path' => public_path('assets/icon/logo.svg'), 'mime' => 'image/svg+xml'],
         ];
 
         foreach ($candidates as $candidate) {
             if (file_exists($candidate['path'])) {
                 return 'data:' . $candidate['mime'] . ';base64,' . base64_encode(file_get_contents($candidate['path']));
+            }
+        }
+
+        return null;
+    }
+
+    private function validarRucFactura($ruc, $nombreCliente = null)
+    {
+        $ruc = preg_replace('/\D+/', '', (string) $ruc);
+
+        if (!preg_match('/^\d{11}$/', $ruc)) {
+            return [
+                'status' => false,
+                'console' => 'La factura requiere un RUC válido de 11 dígitos.'
+            ];
+        }
+
+        $urlBase = config('apisunat.url');
+        $personaId = config('apisunat.id');
+        $personaToken = config('apisunat.token.prod');
+        $url = "$urlBase/personas/$personaId/getRUC?ruc=$ruc&personaToken=$personaToken";
+
+        try {
+            $response = Http::get($url);
+
+            if ($response->failed()) {
+                return [
+                    'status' => false,
+                    'console' => 'No se pudo validar el RUC con SUNAT.'
+                ];
+            }
+
+            $data = $response->json('data');
+            $razonSocial = $this->extraerRazonSocialSunat($data);
+
+            if (!$razonSocial) {
+                return [
+                    'status' => false,
+                    'console' => 'El RUC no existe o SUNAT no devolvió una razón social válida.'
+                ];
+            }
+
+            return [
+                'status' => true,
+                'console' => 'RUC válido.',
+                'ruc' => $ruc,
+                'razon_social' => $razonSocial,
+                'data' => $data,
+            ];
+        } catch (\Throwable $e) {
+            Log::error('Error validando RUC de factura: ' . $e->getMessage());
+
+            return [
+                'status' => false,
+                'console' => 'Error al validar el RUC con SUNAT.'
+            ];
+        }
+    }
+
+    private function extraerRazonSocialSunat($data)
+    {
+        if (is_object($data)) {
+            $data = json_decode(json_encode($data), true);
+        }
+
+        if (!is_array($data)) {
+            return null;
+        }
+
+        $candidatos = [
+            $data['nombre'] ?? null,
+            $data['razon_social'] ?? null,
+            $data['razonSocial'] ?? null,
+            $data['business_name'] ?? null,
+            $data['nombre_o_razon_social'] ?? null,
+        ];
+
+        foreach ($candidatos as $candidato) {
+            $candidato = trim((string) $candidato);
+            if ($candidato !== '') {
+                return $candidato;
             }
         }
 
