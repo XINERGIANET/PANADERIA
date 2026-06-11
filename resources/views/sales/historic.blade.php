@@ -180,7 +180,7 @@
                                             <i class="bi bi-printer"></i>
                                         </button>
                                         @if($anticipada->voucher_type == 'Boleta' || $anticipada->voucher_type == 'Factura')                      
-                                            <a href="{{ config('apisunat.url').'/documents/'.$anticipada->voucher_id.'/getPDF/A4/'.$anticipada->voucher_file }}"
+                                            <a href="{{ route('sales.pdfA4', $anticipada->id) }}"
                                                 target="_blank" class="btn btn-primary btn-sm btn-icon" title="Ver Comprobante">
                                                 A4
                                             </a>

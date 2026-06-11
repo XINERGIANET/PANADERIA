@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleDetail;
 use App\Models\Table;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
@@ -789,6 +790,159 @@ class SaleController extends Controller
     public function destroy($id)
     {
         //
+    }
+
+    public function pdfA4($id)
+    {
+        try {
+            $sale = Sale::with([
+                'client',
+                'details.product',
+                'location',
+                'payments.paymentMethod',
+                'usuario',
+            ])->findOrFail($id);
+
+            if (!in_array($sale->voucher_type, ['Boleta', 'Factura'])) {
+                return response()->json([
+                    'status' => false,
+                    'error' => 'El PDF A4 solo está disponible para boletas y facturas.',
+                ], 422);
+            }
+
+            $client = $sale->client;
+            $voucherType = $sale->voucher_type;
+            $seriesNumber = $sale->number ?: ($voucherType === 'Factura' ? 'F001-00000000' : 'B001-00000000');
+            $companyName = 'MUSAS PASTELERIA S.R.L.';
+            $companyAddress = 'AV. JOSE BALTA NRO. 054 P.J. CHINO ZAMORA CHICLAYO CHICLAYO LAMBAYEQUE';
+            $companyRuc = config('ruc.number');
+
+            $clientName = $client->business_name
+                ?? $client->name
+                ?? $client->contact_name
+                ?? $sale->client_name
+                ?? 'CLIENTE VARIOS';
+
+            $clientDocument = $client->document
+                ?? ($voucherType === 'Factura' ? '00000000000' : '00000000');
+
+            $details = $sale->details
+                ->filter(function ($detail) {
+                    return (float) $detail->unit_price > 0;
+                })
+                ->values();
+
+            $total = round((float) $sale->total, 2);
+            $subtotal = round($total / 1.18, 2);
+            $igv = round($total - $subtotal, 2);
+            $issueDate = $sale->date ? \Carbon\Carbon::parse($sale->date) : now();
+            $detraction = null;
+
+            if ($voucherType === 'Factura' && $total >= 700) {
+                $detraction = round($total * 0.12, 2);
+            }
+
+            $qrPayload = implode('|', [
+                $companyRuc,
+                $voucherType === 'Factura' ? '01' : '03',
+                $seriesNumber,
+                number_format($total, 2, '.', ''),
+                $issueDate->format('Y-m-d'),
+                $clientDocument,
+            ]);
+
+            $logoPath = public_path('assets/icon/logo.svg');
+            $logoDataUri = file_exists($logoPath)
+                ? 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath))
+                : null;
+
+            $qrMatrix = $this->buildPseudoQrMatrix($qrPayload);
+
+            $pdf = Pdf::loadView('sales.pdf.a4', compact(
+                'sale',
+                'clientName',
+                'clientDocument',
+                'voucherType',
+                'seriesNumber',
+                'companyName',
+                'companyAddress',
+                'companyRuc',
+                'details',
+                'total',
+                'subtotal',
+                'igv',
+                'issueDate',
+                'detraction',
+                'logoDataUri',
+                'qrPayload',
+                'qrMatrix'
+            ))->setPaper('A4', 'portrait');
+
+            $filename = strtolower(str_replace(' ', '_', $voucherType . '_' . $seriesNumber . '.pdf'));
+
+            return response($pdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error al generar PDF A4 interno: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => false,
+                'error' => 'Error al generar el PDF A4: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function buildPseudoQrMatrix(string $seed, int $size = 29): array
+    {
+        $matrix = array_fill(0, $size, array_fill(0, $size, 0));
+        $bits = [];
+        $hash = hash('sha256', $seed, true);
+
+        for ($i = 0; $i < strlen($hash); $i++) {
+            for ($bit = 7; $bit >= 0; $bit--) {
+                $bits[] = (ord($hash[$i]) >> $bit) & 1;
+            }
+        }
+
+        $placeFinder = function (int $originX, int $originY) use (&$matrix): void {
+            for ($y = 0; $y < 7; $y++) {
+                for ($x = 0; $x < 7; $x++) {
+                    $isBorder = $x === 0 || $x === 6 || $y === 0 || $y === 6;
+                    $isInner = $x >= 2 && $x <= 4 && $y >= 2 && $y <= 4;
+                    $matrix[$originY + $y][$originX + $x] = ($isBorder || $isInner) ? 1 : 0;
+                }
+            }
+        };
+
+        $placeFinder(0, 0);
+        $placeFinder($size - 7, 0);
+        $placeFinder(0, $size - 7);
+
+        $bitIndex = 0;
+        for ($y = 0; $y < $size; $y++) {
+            for ($x = 0; $x < $size; $x++) {
+                $inFinder =
+                    ($x < 7 && $y < 7) ||
+                    ($x >= $size - 7 && $y < 7) ||
+                    ($x < 7 && $y >= $size - 7);
+
+                if ($inFinder) {
+                    continue;
+                }
+
+                if ($x === 6 || $y === 6 || $x === $size - 7 || $y === $size - 7) {
+                    $matrix[$y][$x] = (($x + $y) % 2 === 0) ? 1 : 0;
+                    continue;
+                }
+
+                $matrix[$y][$x] = $bits[$bitIndex % count($bits)];
+                $bitIndex++;
+            }
+        }
+
+        return $matrix;
     }
 
     // ...existing code...
