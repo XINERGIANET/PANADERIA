@@ -804,6 +804,7 @@ class SaleController extends Controller
         $sale->update([
             'voucher_id' => $documentId,
             'voucher_file' => $filename . '.pdf',
+            'voucher_status' => 'PENDIENTE',
             'number' => "{$serie}-{$number}"
         ]);
 
@@ -812,6 +813,42 @@ class SaleController extends Controller
             'pdf' => $url,
             'detraction_text' => $detraction_text
         ];
+    }
+
+    private function obtenerEstadoVoucherApiSunat($voucherId)
+    {
+        if (!$voucherId) {
+            return null;
+        }
+
+        $url = config('apisunat.url') . '/documents/' . $voucherId . '/getById';
+
+        try {
+            $response = Http::get($url);
+
+            if ($response->failed()) {
+                return null;
+            }
+
+            $data = $response->json();
+            $status = strtoupper(trim($data['status'] ?? ''));
+
+            if ($status === '') {
+                return null;
+            }
+
+            return [
+                'status' => $status,
+                'data' => $data,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo obtener el estado de APISUNAT', [
+                'voucher_id' => $voucherId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**
@@ -1169,6 +1206,30 @@ class SaleController extends Controller
         $anticipadas = $consulta->paginate(15);
         $anticipadas->appends($request->all());
 
+        $anticipadas->getCollection()->transform(function ($sale) {
+            $sale->sunat_status = null;
+            $sale->sunat_status_class = 'secondary';
+
+            if (in_array($sale->voucher_type, ['Boleta', 'Factura']) && !empty($sale->voucher_id)) {
+                $voucherStatus = $this->obtenerEstadoVoucherApiSunat($sale->voucher_id);
+
+                if ($voucherStatus && !empty($voucherStatus['status'])) {
+                    $sale->sunat_status = $voucherStatus['status'];
+                    $sale->sunat_status_class = $this->getSunatStatusClass($voucherStatus['status']);
+
+                    if (($sale->voucher_status ?? null) !== $voucherStatus['status']) {
+                        $sale->voucher_status = $voucherStatus['status'];
+                        $sale->save();
+                    }
+                } else {
+                    $sale->sunat_status = $sale->voucher_status ?: 'PENDIENTE';
+                    $sale->sunat_status_class = $this->getSunatStatusClass($sale->sunat_status);
+                }
+            }
+
+            return $sale;
+        });
+
         $locations = null;
         $allowed_locations_for_accounting = [1, 2];
         if ($roleName === 'admin') {
@@ -1190,6 +1251,23 @@ class SaleController extends Controller
             'payment_method_id',
             'locations'
         ));
+    }
+
+    private function getSunatStatusClass($status)
+    {
+        $status = strtoupper(trim((string) $status));
+
+        switch ($status) {
+            case 'ACEPTADO':
+                return 'success';
+            case 'RECHAZADO':
+                return 'danger';
+            case 'EXCEPCION':
+                return 'warning';
+            case 'PENDIENTE':
+            default:
+                return 'secondary';
+        }
     }
 
     public function getProductsByCategory(Request $request, $categoryId)

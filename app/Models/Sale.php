@@ -24,6 +24,7 @@ class Sale extends Model
         'voucher_type',
         'voucher_id',
         'voucher_file',
+        'voucher_status',
         'number',
         'table_id',
         'client_id',

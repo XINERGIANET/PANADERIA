@@ -135,6 +135,7 @@
                                     <th>Saldo</th>
                                     <th>Fecha entrega</th>
                                     <th>Comprobante</th>
+                                    <th>Estado SUNAT</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -202,6 +203,15 @@
                                             <button type="button" class="btn btn-secondary btn-sm btn-icon" disabled title="No disponible para {{ $anticipada->voucher_type }}">
                                                 CDR
                                             </button>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if(in_array($anticipada->voucher_type, ['Boleta', 'Factura']))
+                                            <span class="badge bg-{{ $anticipada->sunat_status_class ?? 'secondary' }}">
+                                                {{ $anticipada->sunat_status ?? $anticipada->voucher_status ?? 'PENDIENTE' }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">-</span>
                                         @endif
                                     </td>
                                     <td>
