@@ -852,10 +852,7 @@ class SaleController extends Controller
             $qrPayload = $this->buildQrPayload($companyRuc, $voucherType, $seriesNumber, $issueDate, $clientDocument, $total, $igv);
             $qrDataUri = $this->generateQrDataUri($qrPayload);
 
-            $logoPath = base_path('assets/icon/logo.svg');
-            $logoDataUri = file_exists($logoPath)
-                ? 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath))
-                : null;
+            $logoDataUri = $this->getLogoDataUri();
 
             $pdf = Pdf::loadView('sales.pdf.a4', compact(
                 'sale',
@@ -907,6 +904,26 @@ class SaleController extends Controller
             'address' => implode(' ', $addressLines),
             'address_lines' => $addressLines,
         ];
+    }
+
+    private function getLogoDataUri(): ?string
+    {
+        $candidates = [
+            ['path' => base_path('assets/icon/xinergia.jpeg'), 'mime' => 'image/jpeg'],
+            ['path' => base_path('assets/icon/xinergia.jpg'), 'mime' => 'image/jpeg'],
+            ['path' => base_path('assets/icon/logo.svg'), 'mime' => 'image/svg+xml'],
+            ['path' => public_path('assets/icon/xinergia.jpeg'), 'mime' => 'image/jpeg'],
+            ['path' => public_path('assets/icon/xinergia.jpg'), 'mime' => 'image/jpeg'],
+            ['path' => public_path('assets/icon/logo.svg'), 'mime' => 'image/svg+xml'],
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate['path'])) {
+                return 'data:' . $candidate['mime'] . ';base64,' . base64_encode(file_get_contents($candidate['path']));
+            }
+        }
+
+        return null;
     }
 
     private function buildQrPayload(string $companyRuc, string $voucherType, string $seriesNumber, $issueDate, string $clientDocument, float $total, float $igv): string
