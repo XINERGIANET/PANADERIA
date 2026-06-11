@@ -956,13 +956,13 @@ class SaleController extends Controller
     private function getCompanyProfile(): array
     {
         $addressLines = [
-            'AV. JOSE BALTA NRO. 054 P.J. CHINO ZAMORA CHICLAYO',
+            'MZ. C LOTE. 19 URB. EL AMAUTA (COSTADO LOS PINOS DE LA PLATA) CHICLAYO CHICLAYO LAMBAYEQUE',
             'CHICLAYO LAMBAYEQUE',
         ];
 
         return [
             'ruc' => config('ruc.number'),
-            'name' => 'MUSAS PASTELERIA S.R.L.',
+            'name' => 'CUSTODIO CHAVESTA JAIME',
             'address' => implode(' ', $addressLines),
             'address_lines' => $addressLines,
         ];
