@@ -914,7 +914,10 @@ class SaleController extends Controller
             $qrPayload = $this->buildQrPayload($companyRuc, $voucherType, $seriesNumber, $issueDate, $clientDocument, $total, $igv);
             $qrDataUri = $this->generateQrDataUri($qrPayload);
 
-            $logoInlineSvg = $this->getLogoInlineSvg();
+            $logoPath = public_path('assets/icon/logo.svg');
+            $logoDataUri = file_exists($logoPath)
+                ? 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath))
+                : null;
 
             $pdf = Pdf::loadView('sales.pdf.a4', compact(
                 'sale',
@@ -932,7 +935,7 @@ class SaleController extends Controller
                 'igv',
                 'issueDate',
                 'detraction',
-                'logoInlineSvg',
+                'logoDataUri',
                 'qrPayload',
                 'qrDataUri'
             ))->setPaper('A4', 'portrait');
@@ -966,24 +969,6 @@ class SaleController extends Controller
             'address' => implode(' ', $addressLines),
             'address_lines' => $addressLines,
         ];
-    }
-
-    private function getLogoInlineSvg(): ?string
-    {
-        $candidates = [
-            base_path('assets/icon/logo.svg'),
-            __DIR__ . '/../../../assets/icon/logo.svg',
-            dirname(base_path()) . '/PANADERIA/assets/icon/logo.svg',
-        ];
-
-        foreach ($candidates as $logoPath) {
-            $realPath = realpath($logoPath);
-            if ($realPath && is_readable($realPath)) {
-                return file_get_contents($realPath);
-            }
-        }
-
-        return null;
     }
 
     private function validarRucFactura($ruc, $nombreCliente = null)
