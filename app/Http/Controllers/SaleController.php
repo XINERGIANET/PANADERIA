@@ -813,8 +813,8 @@ class SaleController extends Controller
             $client = $sale->client;
             $voucherType = $sale->voucher_type;
             $seriesNumber = $sale->number ?: ($voucherType === 'Factura' ? 'F001-00000000' : 'B001-00000000');
-            $companyName = 'MUSAS PASTELERIA S.R.L.';
-            $companyAddress = 'AV. JOSE BALTA NRO. 054 P.J. CHINO ZAMORA CHICLAYO CHICLAYO LAMBAYEQUE';
+            $companyName = 'CUSTODIO CHAVESTA JAIME';
+            $companyAddress = 'MZ. C LOTE. 19 URB. EL AMAUTA (COSTADO LOS PINOS DE LA PLATA) CHICLAYO CHICLAYO LAMBAYEQUE';
             $companyRuc = config('ruc.number');
 
             $clientName = $client->business_name
