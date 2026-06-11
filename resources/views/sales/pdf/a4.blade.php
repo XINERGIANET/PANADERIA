@@ -243,6 +243,7 @@
 <body>
 @php
     $voucherLabel = $voucherType === 'Factura' ? 'FACTURA DE VENTA ELECTRÓNICA' : 'BOLETA DE VENTA ELECTRÓNICA';
+    $voucherLabelHtml = $voucherType === 'Factura' ? 'FACTURA DE VENTA<br>ELECTRÓNICA' : 'BOLETA DE VENTA<br>ELECTRÓNICA';
     $docLabel = $voucherType === 'Factura' ? 'RUC' : 'DNI';
     $customerLabel = $voucherType === 'Factura' ? 'RAZÓN SOCIAL' : 'NOMBRE';
     $displayDetails = $details->count() > 0 ? $details : collect([(object) [
@@ -260,6 +261,9 @@
     $logoTag = $logoDataUri
         ? '<img class="logo" src="' . $logoDataUri . '" alt="Logo">'
         : '<div style="border:1px solid #ccc; padding:20px; text-align:center; font-weight:700;">SIN LOGO</div>';
+    $companyAddressHtml = implode('<br>', array_map(function ($line) {
+        return e($line);
+    }, $companyAddressLines ?? []));
 @endphp
 
 <div class="sheet">
@@ -270,12 +274,12 @@
             </td>
             <td class="company-cell">
                 <p class="company-name">{{ $companyName }}</p>
-                <p class="company-address">{{ $companyAddress }}</p>
+                <p class="company-address">{!! $companyAddressHtml !!}</p>
             </td>
             <td class="voucher-cell">
                 <div class="voucher-box">
                     <div class="voucher-ruc">R.U.C. N° {{ $companyRuc }}</div>
-                    <div class="voucher-title">{{ $voucherLabel }}</div>
+                    <div class="voucher-title">{!! $voucherLabelHtml !!}</div>
                     <div class="voucher-number">{{ $seriesNumber }}</div>
                 </div>
             </td>

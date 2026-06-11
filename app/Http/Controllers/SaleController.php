@@ -820,6 +820,7 @@ class SaleController extends Controller
             $company = $this->getCompanyProfile();
             $companyName = $company['name'];
             $companyAddress = $company['address'];
+            $companyAddressLines = $company['address_lines'];
             $companyRuc = $company['ruc'];
 
             $clientName = $client->business_name
@@ -850,7 +851,7 @@ class SaleController extends Controller
             $qrPayload = $this->buildQrPayload($companyRuc, $voucherType, $seriesNumber, $issueDate, $clientDocument, $total, $igv);
             $qrDataUri = $this->generateQrDataUri($qrPayload);
 
-            $logoPath = public_path('assets/icon/logo.svg');
+            $logoPath = base_path('assets/icon/logo.svg');
             $logoDataUri = file_exists($logoPath)
                 ? 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath))
                 : null;
@@ -863,6 +864,7 @@ class SaleController extends Controller
                 'seriesNumber',
                 'companyName',
                 'companyAddress',
+                'companyAddressLines',
                 'companyRuc',
                 'details',
                 'total',
@@ -893,10 +895,16 @@ class SaleController extends Controller
 
     private function getCompanyProfile(): array
     {
+        $addressLines = [
+            'AV. JOSE BALTA NRO. 054 P.J. CHINO ZAMORA CHICLAYO',
+            'CHICLAYO LAMBAYEQUE',
+        ];
+
         return [
             'ruc' => config('ruc.number'),
             'name' => 'MUSAS PASTELERIA S.R.L.',
-            'address' => 'AV. JOSE BALTA NRO. 054 P.J. CHINO ZAMORA CHICLAYO CHICLAYO LAMBAYEQUE',
+            'address' => implode(' ', $addressLines),
+            'address_lines' => $addressLines,
         ];
     }
 
