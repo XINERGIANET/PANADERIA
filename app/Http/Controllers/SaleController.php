@@ -1255,6 +1255,128 @@ class SaleController extends Controller
         ));
     }
 
+    public function excel(Request $request)
+    {
+        $start_date = $request->input('start_date');
+        $end_date = $request->input('end_date');
+        $numero_comprobante = $request->input('number');
+        $client_id = $request->input('client_id');
+        $voucher_type = $request->input('voucher_type');
+        $payment_method_id = $request->input('payment_method_id');
+        $shift = $request->input('shift');
+        $location_id = $request->input('location_id');
+
+        $client = Client::find($client_id);
+        if ($client) {
+            $request->merge(['client_name' => $client->business_name ? $client->business_name : $client->contact_name]);
+        }
+
+        $paymentMethod = PaymentMethod::where('deleted', 0)->get();
+        $user = Auth::user();
+        $roleName = strtolower(optional($user->rol)->name ?? '');
+
+        $consulta = Sale::query()->with(['client', 'location'])->where('deleted', 0)
+            ->when($start_date, fn($q) => $q->whereDate('date', '>=', $start_date))
+            ->when($end_date, fn($q) => $q->whereDate('date', '<=', $end_date))
+            ->when($numero_comprobante, fn($q) => $q->where('number', 'like', "%$numero_comprobante%"))
+            ->when($shift !== null && $shift !== '', fn($q) => $q->where('shift', $shift))
+            ->when($client_id, fn($q) => $q->where('client_id', $client_id))
+            ->when($voucher_type, fn($q) => $q->where('voucher_type', $voucher_type))
+            ->when($payment_method_id, function ($q) use ($payment_method_id) {
+                $q->whereHas('payments', fn($q2) => $q2->where('payment_method_id', $payment_method_id));
+            })
+            ->orderBy('date', 'desc')
+            ->orderBy('id', 'desc');
+
+        if ($roleName === 'caja') {
+            $consulta->where('location_id', $user->location_id);
+        } elseif ($roleName !== 'admin' && $roleName !== 'administrador' && $roleName !== 'contabilidad') {
+            $consulta->where('user_id', $user->id);
+        }
+
+        if ($roleName === 'contabilidad') {
+            $consulta->where('voucher_type', '!=', 'TICKET');
+        }
+
+        if (($roleName === 'admin' || $roleName === 'administrador' || $roleName === 'contabilidad') && $location_id) {
+            $consulta->where('location_id', $location_id);
+        }
+
+        $sales = $consulta->get();
+        $total = $sales->sum('total');
+
+        $total_pagos = Payment::query()
+            ->where('deleted', 0)
+            ->when($start_date, fn($q) => $q->whereDate('date', '>=', $start_date))
+            ->when($end_date, fn($q) => $q->whereDate('date', '<=', $end_date))
+            ->when($payment_method_id, fn($q) => $q->where('payment_method_id', $payment_method_id))
+            ->whereHas('sale', function ($q) use ($numero_comprobante, $client_id, $voucher_type, $user, $shift, $roleName, $location_id) {
+                if ($roleName === 'caja') {
+                    $q->where('location_id', $user->location_id);
+                } elseif ($roleName !== 'admin' && $roleName !== 'administrador' && $roleName !== 'contabilidad') {
+                    $q->where('user_id', $user->id);
+                }
+
+                if ($roleName === 'contabilidad') {
+                    $q->where('voucher_type', '!=', 'TICKET');
+                }
+
+                if (($roleName === 'admin' || $roleName === 'administrador' || $roleName === 'contabilidad') && $location_id) {
+                    $q->where('location_id', $location_id);
+                }
+
+                $q->when($numero_comprobante, fn($q2) => $q2->where('number', 'like', "%$numero_comprobante%"))
+                    ->when($client_id, fn($q2) => $q2->where('client_id', $client_id))
+                    ->when($shift !== null && $shift !== '', fn($q2) => $q2->where('shift', $shift))
+                    ->when($voucher_type, fn($q2) => $q2->where('voucher_type', $voucher_type));
+            })
+            ->sum('subtotal');
+
+        $sunatStatuses = [];
+        foreach ($sales as $sale) {
+            $sunatStatuses[$sale->id] = [
+                'status' => null,
+                'class' => 'secondary',
+            ];
+
+            if (in_array($sale->voucher_type, ['Boleta', 'Factura']) && !empty($sale->voucher_id)) {
+                $voucherStatus = $this->obtenerEstadoVoucherApiSunat($sale->voucher_id);
+
+                if ($voucherStatus && !empty($voucherStatus['status'])) {
+                    $sunatStatuses[$sale->id]['status'] = $voucherStatus['status'];
+                    $sunatStatuses[$sale->id]['class'] = $this->getSunatStatusClass($voucherStatus['status']);
+
+                    if (($sale->voucher_status ?? null) !== $voucherStatus['status']) {
+                        $sale->update([
+                            'voucher_status' => $voucherStatus['status'],
+                        ]);
+                    }
+                } else {
+                    $sunatStatuses[$sale->id]['status'] = $sale->voucher_status ?: 'PENDIENTE';
+                    $sunatStatuses[$sale->id]['class'] = $this->getSunatStatusClass($sunatStatuses[$sale->id]['status']);
+                }
+            }
+        }
+
+        $filters = [
+            'start_date' => $start_date ?: 'Todos',
+            'end_date' => $end_date ?: 'Todos',
+            'number' => $numero_comprobante ?: 'Todos',
+            'voucher_type' => $voucher_type ?: 'Todos',
+            'payment_method' => $payment_method_id ? optional($paymentMethod->firstWhere('id', $payment_method_id))->name : 'Todos',
+            'shift' => $shift === '0' ? 'Mañana' : ($shift === '1' ? 'Tarde' : 'Todos'),
+            'location' => $location_id ? optional(Location::find($location_id))->name : 'Todas',
+        ];
+
+        $filename = 'Historial_Ventas_' . now()->format('Ymd_His') . '.xls';
+
+        return response()
+            ->view('sales.excel', compact('sales', 'sunatStatuses', 'total', 'total_pagos', 'filters', 'roleName'))
+            ->header('Content-Type', 'application/vnd.ms-excel; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Cache-Control', 'max-age=0');
+    }
+
     private function getSunatStatusClass($status)
     {
         $status = strtoupper(trim((string) $status));

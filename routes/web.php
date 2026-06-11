@@ -113,6 +113,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/api/all-products', [SaleController::class, 'getAllProducts'])->name('sales.getAllProducts');
     Route::get('sales/details', [SaleController::class, 'details'])->name('sales.details');
     Route::get('/sales/{id}/pdf-a4', [SaleController::class, 'pdfA4'])->name('sales.pdfA4');
+    Route::get('/sales/excel', [SaleController::class, 'excel'])->name('sales.excel');
     Route::get('/ventas/anular', [SaleController::class, 'anular'])->name('sales.anular');
     Route::get('sales/getVoucherData',[SaleController::class, 'getVoucherData'])->name('sales.getVoucherData');
     Route::get('/sales/historic', [SaleController::class, 'historic'])->name('sales.historic');

@@ -1,8 +1,8 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 
 @section('header')
-<h2>Histórico de ventas</h2>
+<h2>HistÃ³rico de ventas</h2>
 <p>Lista total de ventas</p>
 @endsection
 
@@ -30,7 +30,7 @@
                             
                              @if (!auth()->user()->hasRole('contabilidad'))
                             <div class="col-md-3">
-                                <label class="form-label">N° Comprobante</label>
+                                <label class="form-label">NÂ° Comprobante</label>
                                 <input type="text" id="number" name="number" class="form-control" value="{{ request('number') }}">
                             </div>
                             <div class="col-md-3 mb-3">
@@ -54,7 +54,7 @@
 
                             @if (!auth()->user()->hasRole('contabilidad'))
                             <div class="col-md-3">
-                                <label class="form-label">Método de pago</label>
+                                <label class="form-label">MÃ©todo de pago</label>
                                 <select name="payment_method_id" class="form-select">
                                     <option value="">Todos</option>
                                     @foreach($paymentMethod as $method)
@@ -82,7 +82,7 @@
                                 <label class="form-label">Turno</label>
                                 <select name="shift" class="form-select">
                                     <option value="">Todos</option>
-                                    <option value="0" {{ request('shift') == 0 ? 'selected' : '' }}>Mañana</option>
+                                    <option value="0" {{ request('shift') == 0 ? 'selected' : '' }}>MaÃ±ana</option>
                                     <option value="1" {{ request('shift') == 1 ? 'selected' : '' }}>Tarde</option>
                                 </select>
                             </div>
@@ -91,7 +91,7 @@
                                 <div class=" w-50s me-2">
                                     <button type="submit" class="btn btn-primary w-100" id="btnFiltrar">Filtrar</button>
                                 </div>
-                                <div class="d-none w-50s me-2">
+                                <div class="w-50s me-2">
                                     <button type="button" class="btn btn-success w-100" id="btnExcel">
                                         <i class="bi bi-file-earmark-excel"></i> Excel
                                     </button>
@@ -127,7 +127,7 @@
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>N° comprobante</th>
+                                    <th>NÂ° comprobante</th>
                                     <th>Tipo</th>
                                     <th>Cliente</th>
                                     <th>Fecha</th>
@@ -289,7 +289,7 @@
                 </table>
 
                 <label for="direccion-input" class="form-label">
-                    Dirección
+                    DirecciÃ³n
                 </label>
                 <input type="text" readonly id="modal-direccion" name="direccion-input" class="form-control">
 
@@ -299,7 +299,7 @@
                 <input type="text" readonly id="modal-referencia" name="direccion-input" class="form-control">
 
                 <label for="direccion-input" class="form-label mt-3">
-                    Observación
+                    ObservaciÃ³n
                 </label>
                 <input type="text" readonly id="modal-observacion" name="direccion-input" class="form-control">
 
@@ -337,7 +337,7 @@
                     <thead>
                         <tr>
                             <th>Pago</th>
-                            <th>Método</th>
+                            <th>MÃ©todo</th>
                             <th>Fecha</th>
                         </tr>
                     </thead>
@@ -365,7 +365,7 @@
                     </div>
                     <div class="col-6">
                         <label for="metodo-input" class="form-label">
-                            Método de pago
+                            MÃ©todo de pago
                         </label>
                         <input type="text" readonly id="modal-metodo" name="metodo-input" class="form-control">
                     </div>
@@ -435,11 +435,11 @@
         const sale_id = $(this).data('sale-id');
 
         Swal.fire({
-            title: '�Anular venta?',
-            text: 'Esta acci�n restaurar� el stock asociado.',
+            title: '¿Anular venta?',
+            text: 'Esta acción restaurará el stock asociado.',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'S�, anular',
+            confirmButtonText: 'Sí, anular',
             cancelButtonText: 'Cancelar',
             customClass: {
                 title: 'text-dark',
@@ -492,14 +492,6 @@
             });
         });
     });
-
-                    }
-                });
-            }
-        });
-    });
-
-
 
     document.addEventListener('DOMContentLoaded', function() {
 
@@ -573,7 +565,7 @@
                         spinner.classList.add('spinner-hidden');
 
                         ToastError.fire({
-                            text: 'Ocurrió un error al listar los detalles'
+                            text: 'OcurriÃ³ un error al listar los detalles'
                         });
                     }
                 });
@@ -635,7 +627,7 @@
                         spinner.classList.add('spinner-hidden');
 
                         ToastError.fire({
-                            text: 'Ocurrió un error al listar los pagos'
+                            text: 'OcurriÃ³ un error al listar los pagos'
                         });
                     }
                 });
@@ -690,11 +682,11 @@
 
             static URL_PLUGIN_POR_DEFECTO = "http://localhost:8000";
             static Operacion = Operacion;
-            static TAMAÑO_IMAGEN_NORMAL = 0;
-            static TAMAÑO_IMAGEN_DOBLE_ANCHO = 1;
-            static TAMAÑO_IMAGEN_DOBLE_ALTO = 2;
-            static TAMAÑO_IMAGEN_DOBLE_ANCHO_Y_ALTO = 3;
-            static TAMAÑO_IMAGEN_DOBLE_ANCHO_Y_ALTO = 3;
+            static TAMAÃ‘O_IMAGEN_NORMAL = 0;
+            static TAMAÃ‘O_IMAGEN_DOBLE_ANCHO = 1;
+            static TAMAÃ‘O_IMAGEN_DOBLE_ALTO = 2;
+            static TAMAÃ‘O_IMAGEN_DOBLE_ANCHO_Y_ALTO = 3;
+            static TAMAÃ‘O_IMAGEN_DOBLE_ANCHO_Y_ALTO = 3;
             static ALINEACION_IZQUIERDA = 0;
             static ALINEACION_CENTRO = 1;
             static ALINEACION_DERECHA = 2;
@@ -713,7 +705,7 @@
                 return this;
             }
 
-            CargarImagenLocalEImprimir(ruta, tamaño, maximoAncho) {
+            CargarImagenLocalEImprimir(ruta, tamaÃ±o, maximoAncho) {
                 this.operaciones.push(new ConectorPlugin.Operacion("CargarImagenLocalEImprimir", Array.from(arguments)));
                 return this;
             }
@@ -729,7 +721,7 @@
                 this.operaciones.push(new ConectorPlugin.Operacion("DefinirCaracterPersonalizado", Array.from(arguments)));
                 return this;
             }
-            DescargarImagenDeInternetEImprimir(urlImagen, tamaño, maximoAncho) {
+            DescargarImagenDeInternetEImprimir(urlImagen, tamaÃ±o, maximoAncho) {
                 this.operaciones.push(new ConectorPlugin.Operacion("DescargarImagenDeInternetEImprimir", Array.from(arguments)));
                 return this;
             }
@@ -774,8 +766,8 @@
                 this.operaciones.push(new ConectorPlugin.Operacion("EstablecerSubrayado", Array.from(arguments)));
                 return this;
             }
-            EstablecerTamañoFuente(multiplicadorAncho, multiplicadorAlto) {
-                this.operaciones.push(new ConectorPlugin.Operacion("EstablecerTamañoFuente", Array.from(arguments)));
+            EstablecerTamaÃ±oFuente(multiplicadorAncho, multiplicadorAlto) {
+                this.operaciones.push(new ConectorPlugin.Operacion("EstablecerTamaÃ±oFuente", Array.from(arguments)));
                 return this;
             }
             Feed(lineas) {
@@ -790,55 +782,55 @@
                 this.operaciones.push(new ConectorPlugin.Operacion("HabilitarElModoDeCaracteresChinos", Array.from(arguments)));
                 return this;
             }
-            ImprimirCodigoDeBarrasCodabar(contenido, alto, ancho, tamañoImagen) {
+            ImprimirCodigoDeBarrasCodabar(contenido, alto, ancho, tamaÃ±oImagen) {
 
                 this.operaciones.push(new ConectorPlugin.Operacion("ImprimirCodigoDeBarrasCodabar", Array.from(arguments)));
                 return this;
             }
 
-            ImprimirCodigoDeBarrasCode128(contenido, alto, ancho, tamañoImagen) {
+            ImprimirCodigoDeBarrasCode128(contenido, alto, ancho, tamaÃ±oImagen) {
                 this.operaciones.push(new ConectorPlugin.Operacion("ImprimirCodigoDeBarrasCode128", Array.from(arguments)));
                 return this;
             }
-            ImprimirCodigoDeBarrasCode39(contenido, incluirSumaDeVerificacion, modoAsciiCompleto, alto, ancho, tamañoImagen) {
+            ImprimirCodigoDeBarrasCode39(contenido, incluirSumaDeVerificacion, modoAsciiCompleto, alto, ancho, tamaÃ±oImagen) {
                 this.operaciones.push(new ConectorPlugin.Operacion("ImprimirCodigoDeBarrasCode39", Array.from(arguments)));
                 return this;
             }
 
-            ImprimirCodigoDeBarrasCode93(contenido, alto, ancho, tamañoImagen) {
+            ImprimirCodigoDeBarrasCode93(contenido, alto, ancho, tamaÃ±oImagen) {
                 this.operaciones.push(new ConectorPlugin.Operacion("ImprimirCodigoDeBarrasCode93", Array.from(arguments)));
                 return this;
             }
 
-            ImprimirCodigoDeBarrasEan(contenido, alto, ancho, tamañoImagen) {
+            ImprimirCodigoDeBarrasEan(contenido, alto, ancho, tamaÃ±oImagen) {
                 this.operaciones.push(new ConectorPlugin.Operacion("ImprimirCodigoDeBarrasEan", Array.from(arguments)));
                 return this;
             }
-            ImprimirCodigoDeBarrasEan8(contenido, alto, ancho, tamañoImagen) {
+            ImprimirCodigoDeBarrasEan8(contenido, alto, ancho, tamaÃ±oImagen) {
                 this.operaciones.push(new ConectorPlugin.Operacion("ImprimirCodigoDeBarrasEan8", Array.from(arguments)));
                 return this;
             }
-            ImprimirCodigoDeBarrasPdf417(contenido, nivelSeguridad, alto, ancho, tamañoImagen) {
+            ImprimirCodigoDeBarrasPdf417(contenido, nivelSeguridad, alto, ancho, tamaÃ±oImagen) {
                 this.operaciones.push(new ConectorPlugin.Operacion("ImprimirCodigoDeBarrasPdf417", Array.from(arguments)));
                 return this;
             }
-            ImprimirCodigoDeBarrasTwoOfFiveITF(contenido, intercalado, alto, ancho, tamañoImagen) {
+            ImprimirCodigoDeBarrasTwoOfFiveITF(contenido, intercalado, alto, ancho, tamaÃ±oImagen) {
                 this.operaciones.push(new ConectorPlugin.Operacion("ImprimirCodigoDeBarrasTwoOfFiveITF", Array.from(arguments)));
                 return this;
             }
-            ImprimirCodigoDeBarrasUpcA(contenido, alto, ancho, tamañoImagen) {
+            ImprimirCodigoDeBarrasUpcA(contenido, alto, ancho, tamaÃ±oImagen) {
                 this.operaciones.push(new ConectorPlugin.Operacion("ImprimirCodigoDeBarrasUpcA", Array.from(arguments)));
                 return this;
             }
-            ImprimirCodigoDeBarrasUpcE(contenido, alto, ancho, tamañoImagen) {
+            ImprimirCodigoDeBarrasUpcE(contenido, alto, ancho, tamaÃ±oImagen) {
                 this.operaciones.push(new ConectorPlugin.Operacion("ImprimirCodigoDeBarrasUpcE", Array.from(arguments)));
                 return this;
             }
-            ImprimirCodigoQr(contenido, anchoMaximo, nivelRecuperacion, tamañoImagen) {
+            ImprimirCodigoQr(contenido, anchoMaximo, nivelRecuperacion, tamaÃ±oImagen) {
                 this.operaciones.push(new ConectorPlugin.Operacion("ImprimirCodigoQr", Array.from(arguments)));
                 return this;
             }
-            ImprimirImagenEnBase64(imagenCodificadaEnBase64, tamaño, maximoAncho) {
+            ImprimirImagenEnBase64(imagenCodificadaEnBase64, tamaÃ±o, maximoAncho) {
                 this.operaciones.push(new ConectorPlugin.Operacion("ImprimirImagenEnBase64", Array.from(arguments)));
                 return this;
             }
@@ -937,7 +929,7 @@
             url: '{{ url('sales') }}/' + saleId, // O usa "{{ url('sales') }}/" + saleId si tu ruta es resource
             method: 'GET',
             success: async function(response) {
-                // Aquí puedes mostrar los datos en un modal, consola, etc.
+                // AquÃ­ puedes mostrar los datos en un modal, consola, etc.
                 // console.log(response);
 
                 const voucherType = response.voucher_type;
@@ -957,7 +949,7 @@
             const esAnticipada = response.type_sale == 1 || response.type_sale == 3;
             const esDelivery = response.type_sale == 2 || response.type_sale == 3;
 
-            // Configuración de impresión
+            // ConfiguraciÃ³n de impresiÃ³n
             const IP_COMPUTADORA_REMOTA = "192.168.18.46";
             const PUERTO_REMOTO = "8000";
             const URL_REMOTA = `http://${IP_COMPUTADORA_REMOTA}:${PUERTO_REMOTO}`;
@@ -966,10 +958,10 @@
             const conector = new ConectorPluginV3(ConectorPluginV3.URL_PLUGIN_POR_DEFECTO, licence);
             await conector.Iniciar();
 
-            // Usar los productos desde la respuesta del servidor (más confiable)
+            // Usar los productos desde la respuesta del servidor (mÃ¡s confiable)
             const productosParaImprimir = response.details;
 
-            // Crear el documento de impresión
+            // Crear el documento de impresiÃ³n
             let impresionTexto = crearDocumentoImpresion(
                 conector,
                 response,
@@ -985,10 +977,10 @@
             await ejecutarImpresion(conector, impresionTexto, tipoComprobante, voucherTypeFormatted, URL_REMOTA, response);
 
         } catch (error) {
-            console.error('Error en impresión:', error);
+            console.error('Error en impresiÃ³n:', error);
             ToastMessage.fire({
                 icon: 'warning',
-                text: `Venta guardada correctamente, pero error en impresión: ${error.message}`
+                text: `Venta guardada correctamente, pero error en impresiÃ³n: ${error.message}`
             });
         }
     }
@@ -997,13 +989,13 @@
         const nombreImpresora = 'ticketera';
 
         try {
-            // PASO 1: Intentar impresión local
-            console.log('Intentando impresión local...');
+            // PASO 1: Intentar impresiÃ³n local
+            console.log('Intentando impresiÃ³n local...');
             conector.imprimirEn(nombreImpresora, response);
             // let resultado = await conector.imprimirEn(nombreImpresora);
 
             // if (resultado && resultado.ok) {
-            //     console.log('Impresión local exitosa');
+            //     console.log('ImpresiÃ³n local exitosa');
             //     ToastMessage.fire({
             //         icon: 'success',
             //         text: `${voucherTypeFormatted} impreso localmente`
@@ -1011,13 +1003,13 @@
             //     return;
             // }
 
-            // // PASO 2: Intentar impresión remota
-            // console.log('Impresión local falló, intentando remota...');
+            // // PASO 2: Intentar impresiÃ³n remota
+            // console.log('ImpresiÃ³n local fallÃ³, intentando remota...');
             // const urlRemotaCompleta = `${URL_REMOTA}/imprimir`;
             // resultado = await conector.imprimirEnImpresoraRemota(nombreImpresora, urlRemotaCompleta);
 
             // if (resultado && resultado.ok) {
-            //     console.log('Impresión remota exitosa');
+            //     console.log('ImpresiÃ³n remota exitosa');
             //     ToastMessage.fire({
             //         icon: 'success',
             //         text: `${voucherTypeFormatted} impreso remotamente`
@@ -1036,7 +1028,7 @@
             console.error('Error en ejecutarImpresion:', error);
             ToastMessage.fire({
                 icon: 'warning',
-                text: `Error en impresión: ${error.message}`
+                text: `Error en impresiÃ³n: ${error.message}`
             });
         }
     }
@@ -1044,7 +1036,7 @@
     function numeroALetras(num) {
         const unidades = ['', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
         const decenas = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
-        const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
+        const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'diecisÃ©is', 'diecisiete', 'dieciocho', 'diecinueve'];
         const centenas = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
 
         if (num === 0) return 'cero';
@@ -1106,7 +1098,7 @@
 
         // Agregar centavos
         if (centavos > 0) {
-            resultado += ' con ' + numeroALetras(centavos) + ' céntimos';
+            resultado += ' con ' + numeroALetras(centavos) + ' cÃ©ntimos';
         }
 
         return resultado.toUpperCase();
@@ -1115,7 +1107,7 @@
     function agregarProductosImpresion(impresionTexto, productos) {
         const ID_PAN_VARIOS = 238;
 
-        // console.log("🖨️ === PRODUCTOS PARA IMPRIMIR ===");
+        // console.log("ðŸ–¨ï¸ === PRODUCTOS PARA IMPRIMIR ===");
         // productos.forEach((prod, index) => {
         //     console.log(`Producto ${index}:`, prod);
         // });
@@ -1161,7 +1153,7 @@
             const descuento = parseFloat(prod.descuento) || 0;
             const subtotal = precioUnitario * cantidad;
 
-            // console.log(`🖨️ IMPRIMIENDO - ${prod.nombre}:`, {
+            // console.log(`ðŸ–¨ï¸ IMPRIMIENDO - ${prod.nombre}:`, {
             //     datos_originales: {
             //         precio: prod.precio,
             //         cantidad: prod.cantidad
@@ -1192,15 +1184,15 @@
 
         switch (tipoComprobante) {
             case 'ticket':
-                textoValidez = "NO VÁLIDO COMO DOCUMENTO CONTABLE";
+                textoValidez = "NO VÃLIDO COMO DOCUMENTO CONTABLE";
                 textoFinal = "PUEDE CANJEARLO POR UNA BOLETA O FACTURA";
                 break;
             case 'boleta':
-                textoValidez = "DOCUMENTO VÁLIDO";
+                textoValidez = "DOCUMENTO VÃLIDO";
                 textoFinal = "PUEDE CANJEARLO POR UNA FACTURA";
                 break;
             case 'factura':
-                textoValidez = "DOCUMENTO CONTABLE VÁLIDO";
+                textoValidez = "DOCUMENTO CONTABLE VÃLIDO";
                 textoFinal = "GRACIAS POR SU COMPRA";
                 break;
         }
@@ -1212,7 +1204,7 @@
             .EstablecerEnfatizado(true)
             .EscribirTexto(`TOTAL: S/${totalVenta.toFixed(2)}\n`)
             .Feed(1)
-            .EstablecerAlineacion(1) // Alineación izquierda para el texto en letras
+            .EstablecerAlineacion(1) // AlineaciÃ³n izquierda para el texto en letras
             .EstablecerEnfatizado(false)
             .EscribirTexto(`SON: ${textoMonto}\n`)
             .Feed(1)
@@ -1221,8 +1213,8 @@
             .TextoSegunPaginaDeCodigos(2, "cp850", `${textoValidez}\n`)
             .EscribirTexto(`${textoFinal}\n`)
             .EscribirTexto(esAnticipada ? "Recuerde recoger su pedido en la fecha acordada\n" : "")
-            .EscribirTexto(esDelivery ? "Pedido será entregado a domicilio\n" : "")
-            .TextoSegunPaginaDeCodigos(2, "cp850", "Elaborado por Xinergia de Corporación XPANDE\n")
+            .EscribirTexto(esDelivery ? "Pedido serÃ¡ entregado a domicilio\n" : "")
+            .TextoSegunPaginaDeCodigos(2, "cp850", "Elaborado por Xinergia de CorporaciÃ³n XPANDE\n")
             .Pulso(48, 60, 120)
             .Corte(1);
     }
@@ -1243,7 +1235,7 @@
         const nombreCliente = response.client?.nombre || 'N/A';
         const documentoCliente = response.client?.ruc_dni || 'N/A';
 
-        // Obtener métodos de pago seleccionados - CORREGIDO
+        // Obtener mÃ©todos de pago seleccionados - CORREGIDO
         let metodos_pago = [];
         if (response.payments && response.payments.length > 0) {
             metodos_pago = response.payments.map(payment => ({
@@ -1252,10 +1244,10 @@
             }));
         } else {
             // fallback: obtener de los botones activos como antes
-            // ...código existente...
+            // ...cÃ³digo existente...
         }
 
-        // Para la fecha, intentar múltiples fuentes
+        // Para la fecha, intentar mÃºltiples fuentes
         let fechaVenta;
         if (response.fecha) {
             fechaVenta = response.fecha;
@@ -1281,7 +1273,7 @@
             .EscribirTexto(`Fecha: ${fechaVenta}\n`)
             .EscribirTexto("--------------------------------\n");
 
-        // ...en la función crearDocumentoImpresion...
+        // ...en la funciÃ³n crearDocumentoImpresion...
         if (metodos_pago.length > 0) {
             impresionTexto = impresionTexto.EscribirTexto("Formas de Pago:\n");
             metodos_pago.forEach((metodoPago) => {
@@ -1317,8 +1309,7 @@
         // Construir la query string con todos los campos del formulario
         const params = new URLSearchParams(formData).toString();
 
-        // Ruta a la que quieres enviar los datos (ajusta según tu ruta)
-        const url = '{{-- route("sales.excel") --}}' + '?' + params;
+        const url = "{{ route('sales.excel') }}" + '?' + params;
 
         // Redirigir para descargar el Excel (GET)
         window.open(url, '_blank');
@@ -1332,7 +1323,7 @@
         // Construir la query string con todos los campos del formulario
         const params = new URLSearchParams(formData).toString();
 
-        // Ruta a la que quieres enviar los datos (ajusta según tu ruta)
+        // Ruta a la que quieres enviar los datos (ajusta segÃºn tu ruta)
         const url = '{{-- route("sales.pdfReport") --}}' + '?' + params;
 
         // Redirigir para descargar el PDF (GET)
@@ -1403,4 +1394,5 @@
     }
 </style>
 @endsection
+
 
