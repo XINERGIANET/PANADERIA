@@ -2,10 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="utf-8">
-    <title>{{ $voucherLabel ?? 'COMPROBANTE' }}</title>
+    <title>Comprobante</title>
     <style>
         @page {
-            margin: 14mm 12mm 12mm 12mm;
+            margin: 10mm 12mm 10mm 12mm;
         }
 
         body {
@@ -20,7 +20,7 @@
         }
 
         .top-table,
-        .info-table,
+        .customer-table,
         .detail-table,
         .summary-table,
         .footer-table {
@@ -29,71 +29,81 @@
         }
 
         .top-table td {
-            vertical-align: middle;
+            vertical-align: top;
         }
 
         .logo-cell {
-            width: 28%;
-            padding-right: 8px;
+            width: 32%;
+            padding-top: 2px;
         }
 
         .company-cell {
-            width: 46%;
+            width: 43%;
+            padding-top: 48px;
             padding-right: 8px;
         }
 
         .voucher-cell {
-            width: 26%;
+            width: 25%;
+            padding-top: 12px;
+        }
+
+        .logo {
+            width: 100%;
+            max-width: 205px;
+            height: auto;
+            display: block;
         }
 
         .company-name {
             font-size: 18px;
             font-weight: 700;
-            margin: 0 0 4px 0;
+            line-height: 1.05;
+            margin: 0 0 6px 0;
         }
 
         .company-address {
             margin: 0;
             font-size: 10px;
             line-height: 1.35;
+            text-transform: uppercase;
         }
 
         .voucher-box {
             border: 2px solid #111;
-            padding: 14px 10px;
             text-align: center;
-            font-weight: 700;
+            padding: 18px 10px 14px;
             min-height: 98px;
+            font-weight: 700;
         }
 
-        .voucher-box .ruc {
+        .voucher-ruc {
             font-size: 13px;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
 
-        .voucher-box .title {
+        .voucher-title {
             font-size: 14px;
             line-height: 1.25;
             margin-bottom: 18px;
         }
 
-        .voucher-box .number {
+        .voucher-number {
             font-size: 13px;
         }
 
-        .customer-block {
-            margin-top: 8px;
-            width: 60%;
-            margin-left: 0;
-            margin-bottom: 10px;
+        .customer-table {
+            width: 52%;
+            margin: 12px auto 8px;
         }
 
-        .customer-block td {
+        .customer-table td {
             padding: 2px 0;
             font-size: 11px;
         }
 
-        .label {
+        .customer-label {
+            width: 26%;
             font-weight: 700;
             padding-right: 4px;
         }
@@ -103,7 +113,7 @@
         }
 
         .detail-table thead th {
-            background: #3c3c3c;
+            background: #3e3e3e;
             color: #fff;
             font-size: 10px;
             font-weight: 700;
@@ -111,14 +121,14 @@
             text-align: center;
         }
 
-        .detail-table td {
-            padding: 7px 6px;
-            border-bottom: 1px solid #eee;
+        .detail-table tbody td {
+            padding: 8px 6px;
             font-size: 10px;
+            border-bottom: 1px solid #f0f0f0;
         }
 
         .detail-table .desc {
-            padding-left: 14px;
+            padding-left: 16px;
         }
 
         .text-center {
@@ -131,93 +141,102 @@
 
         .summary-wrap {
             width: 100%;
-            margin-top: 0;
+            margin-top: 6px;
         }
 
         .summary-table {
-            width: 46%;
+            width: 36%;
             margin-left: auto;
+            border-spacing: 0;
         }
 
         .summary-table td {
             padding: 4px 6px;
-            font-size: 11px;
-            border-bottom: 1px solid #e6e6e6;
         }
 
-        .summary-table .label-cell {
+        .summary-label {
+            background: #f2f2f2;
+            font-size: 11px;
             font-weight: 700;
             text-align: center;
-            background: #f3f3f3;
         }
 
-        .summary-table .value-cell {
+        .summary-value {
             text-align: right;
-            width: 34%;
+            font-size: 11px;
         }
 
-        .total-row td {
+        .summary-total-label,
+        .summary-total-value {
             border-top: 2px solid #111;
-            border-bottom: 0;
             padding-top: 8px;
-            font-size: 12px;
-            font-weight: 700;
         }
 
-        .grand-total {
+        .summary-total-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .summary-total-value {
             font-size: 18px;
             font-weight: 700;
+            text-align: right;
         }
 
-        .detraction-note {
-            font-size: 10px;
-            margin-top: 8px;
+        .detraction-line {
+            margin-top: 6px;
             text-align: right;
+            font-size: 10px;
             font-weight: 700;
         }
 
         .separator {
             border-top: 2px solid #111;
-            margin: 8px 0 10px 0;
+            margin: 8px 0 10px;
         }
 
         .footer-table td {
             vertical-align: top;
         }
 
-        .qr-box {
-            width: 26%;
+        .qr-cell {
+            width: 17%;
+        }
+
+        .qr-image {
+            width: 118px;
+            height: 118px;
+            display: block;
         }
 
         .qr-text {
-            width: 74%;
-            padding-left: 10px;
+            width: 83%;
+            padding-top: 44px;
+            padding-left: 8px;
             font-size: 10px;
-            line-height: 1.25;
-        }
-
-        .qr-code {
-            display: block;
-            width: 100%;
-            max-width: 125px;
-            height: auto;
+            line-height: 1.2;
         }
 
         .qr-payload {
             font-size: 11px;
             font-weight: 700;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
             word-break: break-all;
         }
 
-        .small-muted {
-            color: #222;
+        .qr-caption {
+            font-size: 10px;
         }
 
-        .logo {
-            width: 100%;
-            max-width: 175px;
-            height: auto;
+        .qr-caption a {
+            color: #1749ff;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .page-space {
+            height: 1px;
         }
     </style>
 </head>
@@ -225,7 +244,7 @@
 @php
     $voucherLabel = $voucherType === 'Factura' ? 'FACTURA DE VENTA ELECTRÓNICA' : 'BOLETA DE VENTA ELECTRÓNICA';
     $docLabel = $voucherType === 'Factura' ? 'RUC' : 'DNI';
-    $customerNameLabel = $voucherType === 'Factura' ? 'RAZÓN SOCIAL' : 'NOMBRE';
+    $customerLabel = $voucherType === 'Factura' ? 'RAZÓN SOCIAL' : 'NOMBRE';
     $displayDetails = $details->count() > 0 ? $details : collect([(object) [
         'product' => null,
         'quantity' => 1,
@@ -255,29 +274,29 @@
             </td>
             <td class="voucher-cell">
                 <div class="voucher-box">
-                    <div class="ruc">R.U.C. N° {{ $companyRuc }}</div>
-                    <div class="title">{{ $voucherLabel }}</div>
-                    <div class="number">{{ $seriesNumber }}</div>
+                    <div class="voucher-ruc">R.U.C. N° {{ $companyRuc }}</div>
+                    <div class="voucher-title">{{ $voucherLabel }}</div>
+                    <div class="voucher-number">{{ $seriesNumber }}</div>
                 </div>
             </td>
         </tr>
     </table>
 
-    <table class="customer-block">
+    <table class="customer-table">
         <tr>
-            <td class="label">{{ $customerNameLabel }}:</td>
+            <td class="customer-label">{{ $customerLabel }}:</td>
             <td>{{ $clientName }}</td>
         </tr>
         <tr>
-            <td class="label">{{ $docLabel }}:</td>
+            <td class="customer-label">{{ $docLabel }}:</td>
             <td>{{ $clientDocument }}</td>
         </tr>
         <tr>
-            <td class="label">EMISIÓN:</td>
+            <td class="customer-label">EMISIÓN:</td>
             <td>{{ $issueDate->format('Y-m-d - H:i:s') }}</td>
         </tr>
         <tr>
-            <td class="label">MONEDA:</td>
+            <td class="customer-label">MONEDA:</td>
             <td>SOL (PEN)</td>
         </tr>
     </table>
@@ -312,29 +331,27 @@
     <div class="summary-wrap">
         <table class="summary-table">
             <tr>
-                <td class="label-cell">OP. GRAVADA</td>
-                <td class="value-cell">{{ number_format($subtotal, 2, '.', '') }}</td>
+                <td class="summary-label">OP. GRAVADA</td>
+                <td class="summary-value">{{ number_format($subtotal, 2, '.', '') }}</td>
             </tr>
             <tr>
-                <td class="label-cell">IGV</td>
-                <td class="value-cell">{{ number_format($igv, 2, '.', '') }}</td>
+                <td class="summary-label">IGV</td>
+                <td class="summary-value">{{ number_format($igv, 2, '.', '') }}</td>
             </tr>
             @if($detraction)
                 <tr>
-                    <td class="label-cell">DETRACCIÓN</td>
-                    <td class="value-cell">{{ number_format($detraction, 2, '.', '') }}</td>
+                    <td class="summary-label">DETRACCIÓN</td>
+                    <td class="summary-value">{{ number_format($detraction, 2, '.', '') }}</td>
                 </tr>
             @endif
-            <tr class="total-row">
-                <td class="label-cell">IMPORTE TOTAL (S/)</td>
-                <td class="value-cell grand-total">{{ number_format($total, 2, '.', '') }}</td>
+            <tr>
+                <td class="summary-total-label">IMPORTE TOTAL (S/)</td>
+                <td class="summary-total-value">{{ number_format($total, 2, '.', '') }}</td>
             </tr>
         </table>
 
         @if($detraction)
-            <div class="detraction-note">
-                OPERACIÓN SUJETA A DETRACCIÓN
-            </div>
+            <div class="detraction-line">OPERACIÓN SUJETA A DETRACCIÓN</div>
         @endif
     </div>
 
@@ -342,26 +359,16 @@
 
     <table class="footer-table">
         <tr>
-            <td class="qr-box">
-                <svg class="qr-code" viewBox="0 0 37 37" xmlns="http://www.w3.org/2000/svg" aria-label="QR">
-                    <rect x="0" y="0" width="37" height="37" fill="#fff"/>
-                    @php
-                        $size = count($qrMatrix);
-                        $offset = 4;
-                    @endphp
-                    @for ($y = 0; $y < $size; $y++)
-                        @for ($x = 0; $x < $size; $x++)
-                            @if(!empty($qrMatrix[$y][$x]))
-                                <rect x="{{ $x + $offset }}" y="{{ $y + $offset }}" width="1" height="1" fill="#000"/>
-                            @endif
-                        @endfor
-                    @endfor
-                </svg>
+            <td class="qr-cell">
+                @if(!empty($qrDataUri))
+                    <img class="qr-image" src="{{ $qrDataUri }}" alt="QR">
+                @endif
             </td>
             <td class="qr-text">
                 <div class="qr-payload">{{ $qrPayload }}</div>
-                <div class="small-muted">
-                    Representación impresa del comprobante electrónico emitido por el sistema.
+                <div class="qr-caption">
+                    Representación impresa de la {{ $voucherLabel }}. Consultar validez en
+                    <a href="https://apisunat.com/buscar">apisunat.com/buscar</a>
                 </div>
             </td>
         </tr>
