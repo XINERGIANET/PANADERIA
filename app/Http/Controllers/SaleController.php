@@ -16,7 +16,7 @@ use App\Models\Table;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Encoding\Encoding;
-use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
 use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -928,16 +928,16 @@ class SaleController extends Controller
 
     private function generateQrDataUri(string $payload): string
     {
-        $result = (new Builder(
-            new SvgWriter(),
-            array(),
-            false,
-            $payload,
-            new Encoding('UTF-8'),
-            ErrorCorrectionLevel::High,
-            220,
-            0
-        ))->build();
+        $result = Builder::create()
+            ->writer(new SvgWriter())
+            ->writerOptions([])
+            ->validateResult(false)
+            ->data($payload)
+            ->encoding(new Encoding('UTF-8'))
+            ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
+            ->size(220)
+            ->margin(0)
+            ->build();
 
         return $result->getDataUri();
     }
