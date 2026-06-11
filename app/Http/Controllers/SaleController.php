@@ -970,17 +970,10 @@ class SaleController extends Controller
 
     private function getLogoDataUri(): ?string
     {
-        $candidates = [
-            ['path' => base_path('assets/icon/xinergia.jpeg'), 'mime' => 'image/jpeg'],
-            ['path' => base_path('assets/icon/xinergia.jpg'), 'mime' => 'image/jpeg'],
-            ['path' => public_path('assets/icon/xinergia.jpeg'), 'mime' => 'image/jpeg'],
-            ['path' => public_path('assets/icon/xinergia.jpg'), 'mime' => 'image/jpeg'],
-        ];
+        $logoPath = base_path('assets/icon/logo.svg');
 
-        foreach ($candidates as $candidate) {
-            if (file_exists($candidate['path'])) {
-                return 'data:' . $candidate['mime'] . ';base64,' . base64_encode(file_get_contents($candidate['path']));
-            }
+        if (file_exists($logoPath)) {
+            return 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath));
         }
 
         return null;
