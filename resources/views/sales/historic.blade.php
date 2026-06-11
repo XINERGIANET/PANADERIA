@@ -207,8 +207,12 @@
                                     </td>
                                     <td>
                                         @if(in_array($anticipada->voucher_type, ['Boleta', 'Factura']))
-                                            <span class="badge bg-{{ $anticipada->sunat_status_class ?? 'secondary' }}">
-                                                {{ $anticipada->sunat_status ?? $anticipada->voucher_status ?? 'PENDIENTE' }}
+                                            @php
+                                                $sunatStatus = $sunatStatuses[$anticipada->id]['status'] ?? $anticipada->voucher_status ?? 'PENDIENTE';
+                                                $sunatClass = $sunatStatuses[$anticipada->id]['class'] ?? 'secondary';
+                                            @endphp
+                                            <span class="badge bg-{{ $sunatClass }}">
+                                                {{ $sunatStatus }}
                                             </span>
                                         @else
                                             <span class="text-muted">-</span>

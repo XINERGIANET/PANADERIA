@@ -1205,30 +1205,31 @@ class SaleController extends Controller
             ->sum('subtotal');
         $anticipadas = $consulta->paginate(15);
         $anticipadas->appends($request->all());
-
-        $anticipadas->getCollection()->transform(function ($sale) {
-            $sale->sunat_status = null;
-            $sale->sunat_status_class = 'secondary';
+        $sunatStatuses = [];
+        foreach ($anticipadas->getCollection() as $sale) {
+            $sunatStatuses[$sale->id] = [
+                'status' => null,
+                'class' => 'secondary',
+            ];
 
             if (in_array($sale->voucher_type, ['Boleta', 'Factura']) && !empty($sale->voucher_id)) {
                 $voucherStatus = $this->obtenerEstadoVoucherApiSunat($sale->voucher_id);
 
                 if ($voucherStatus && !empty($voucherStatus['status'])) {
-                    $sale->sunat_status = $voucherStatus['status'];
-                    $sale->sunat_status_class = $this->getSunatStatusClass($voucherStatus['status']);
+                    $sunatStatuses[$sale->id]['status'] = $voucherStatus['status'];
+                    $sunatStatuses[$sale->id]['class'] = $this->getSunatStatusClass($voucherStatus['status']);
 
                     if (($sale->voucher_status ?? null) !== $voucherStatus['status']) {
-                        $sale->voucher_status = $voucherStatus['status'];
-                        $sale->save();
+                        $sale->update([
+                            'voucher_status' => $voucherStatus['status'],
+                        ]);
                     }
                 } else {
-                    $sale->sunat_status = $sale->voucher_status ?: 'PENDIENTE';
-                    $sale->sunat_status_class = $this->getSunatStatusClass($sale->sunat_status);
+                    $sunatStatuses[$sale->id]['status'] = $sale->voucher_status ?: 'PENDIENTE';
+                    $sunatStatuses[$sale->id]['class'] = $this->getSunatStatusClass($sunatStatuses[$sale->id]['status']);
                 }
             }
-
-            return $sale;
-        });
+        }
 
         $locations = null;
         $allowed_locations_for_accounting = [1, 2];
@@ -1249,7 +1250,8 @@ class SaleController extends Controller
             'total',
             'total_pagos',
             'payment_method_id',
-            'locations'
+            'locations',
+            'sunatStatuses'
         ));
     }
 
