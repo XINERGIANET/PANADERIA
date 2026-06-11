@@ -32,8 +32,9 @@ $invoices_enabled = auth()->user()->location->invoices_enabled == 1;
                             <div class="col-sm-8">
                                 <div class="input-group">
                                     <input type="text" class="form-control form-control-xs" id="document"
-                                        name="document" maxlength="11" onkeypress="isNumber(event)">
-                                    <button type="button" class="btn btn-primary btn-xs d-none"
+                                        name="document" maxlength="11" autocomplete="off" placeholder="Documento"
+                                        onkeypress="isNumber(event)">
+                                    <button type="button" class="btn btn-primary btn-xs d-none" id="document-search-btn"
                                         onclick="searchAPI()"><i
                                             class="bi bi-search"></i></button>
                                 </div>
@@ -872,39 +873,90 @@ $invoices_enabled = auth()->user()->location->invoices_enabled == 1;
         }
     }
 
-    // Función para buscar por API
-    function searchAPI() {
-        var doc = $('#document').val();
+    function getSelectedVoucherType() {
+        return ($('input[name="voucher_type"]').val() || 'Ticket').toString().toLowerCase();
+    }
+
+    function updateDocumentSearchUI(type) {
+        const normalizedType = (type || 'Ticket').toString().toLowerCase();
+        const $documentInput = $('#document');
+        const $searchButton = $('#document-search-btn');
 
         $('#client').val('');
+        $('#direccion').val('');
+        $documentInput.val('');
 
-        if (doc.length != 8 && doc.length != 11) {
+        if (normalizedType === 'boleta') {
+            $documentInput.attr('maxlength', 8).attr('placeholder', 'Ingrese DNI');
+            $searchButton.removeClass('d-none');
+        } else if (normalizedType === 'factura') {
+            $documentInput.attr('maxlength', 11).attr('placeholder', 'Ingrese RUC');
+            $searchButton.removeClass('d-none');
+        } else {
+            $documentInput.attr('maxlength', 11).attr('placeholder', 'Documento');
+            $searchButton.addClass('d-none');
+        }
+    }
+
+    // Función para buscar por API
+    function searchAPI() {
+        const voucherType = getSelectedVoucherType();
+        const doc = ($('#document').val() || '').replace(/\D+/g, '');
+
+        if (voucherType !== 'boleta' && voucherType !== 'factura') {
+            ToastError.fire({ text: 'Seleccione boleta o factura para consultar documento.' });
             return;
         }
+
+        const expectedLength = voucherType === 'factura' ? 11 : 8;
+
+        if (doc.length !== expectedLength) {
+            ToastError.fire({
+                text: voucherType === 'factura'
+                    ? 'Ingrese un RUC válido de 11 dígitos.'
+                    : 'Ingrese un DNI válido de 8 dígitos.'
+            });
+            return;
+        }
+
+        const endpoint = voucherType === 'factura'
+            ? "{{ route('api.ruc') }}"
+            : "{{ route('api.reniec') }}";
 
         Swal.showLoading();
 
         $.ajax({
-            url: "{{ url('sunat/consultar') }}?doc=" + doc,
+            url: endpoint,
             method: 'GET',
+            data: voucherType === 'factura' ? { ruc: doc } : { dni: doc },
             success: function(response) {
-                if (response.success) {
-                    var data = response.data;
-                    if (doc.length === 8) {
-                        var fullName = `${data.nombre} ${data.apellido_paterno} ${data.apellido_materno}`;
-                        $('#client').val(fullName);
-                        $('#direccion').val(data.domicilio?.direccion || '');
+                const success = typeof response.status !== 'undefined' ? response.status : response.success;
+                const data = response.data || response;
+
+                if (success) {
+                    if (voucherType === 'factura') {
+                        $('#document').val(data.ruc || doc);
+                        $('#client').val((data.legal_name || data.name || '').trim());
+                        $('#direccion').val((data.address || '').trim());
                     } else {
-                        $('#client').val(data.nombre);
-                        $('#direccion').val(data.domicilio?.direccion || '');
+                        const nombreCompleto = (data.nombre_completo
+                            || [data.nombres, data.apellido_paterno, data.apellido_materno].filter(Boolean).join(' ')
+                            || data.name
+                            || '').trim();
+
+                        $('#document').val(data.dni || doc);
+                        $('#client').val(nombreCompleto);
+                        $('#direccion').val((data.direccion || '').trim());
                     }
                 } else {
                     ToastError.fire({ text: response.message || 'No se encontró información' });
                 }
+
                 Swal.close();
             },
             error: function(xhr) {
-                ToastError.fire({ text: 'Error al consultar SUNAT/RENIEC' });
+                const message = xhr?.responseJSON?.message || 'Error al consultar DNI/RUC';
+                ToastError.fire({ text: message });
                 Swal.close();
             }
         });
@@ -935,6 +987,8 @@ $invoices_enabled = auth()->user()->location->invoices_enabled == 1;
         } else {
             voucherTypeInput.val(type);
         }
+
+        updateDocumentSearchUI(type);
 
         console.log('Tipo de comprobante seleccionado:', type);
     }
@@ -995,14 +1049,22 @@ $invoices_enabled = auth()->user()->location->invoices_enabled == 1;
             return;
         }
 
-        // Validar RUC si es factura
+        // Validar documento según tipo de comprobante
         const voucherType = document.querySelector('input[name="voucher_type"]').value.toLowerCase();
-        const documentValue = document.getElementById('document').value.trim();
-        if (voucherType === 'factura' && (!documentValue || documentValue.length !== 11)) {
+        const documentValue = (document.getElementById('document').value || '').replace(/\D+/g, '');
+        if (voucherType === 'factura' && documentValue.length !== 11) {
             // Ocultar spinner si falló validación
             $('#global-spinner').removeClass('spinner-visible').addClass('spinner-hidden');
             ToastError.fire({
                 text: 'Debe ingresar un RUC válido de 11 dígitos.'
+            });
+            return;
+        }
+        if (voucherType === 'boleta' && documentValue.length !== 8) {
+            // Ocultar spinner si falló validación
+            $('#global-spinner').removeClass('spinner-visible').addClass('spinner-hidden');
+            ToastError.fire({
+                text: 'Debe ingresar un DNI válido de 8 dígitos.'
             });
             return;
         }
@@ -1165,6 +1227,8 @@ $invoices_enabled = auth()->user()->location->invoices_enabled == 1;
         } else {
             voucher.val('Ticket');
         }
+
+        updateDocumentSearchUI('Ticket');
     }
 
     // Función para convertir números a letras

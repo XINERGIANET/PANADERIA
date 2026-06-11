@@ -1426,6 +1426,294 @@ class SaleController extends Controller
         }
     }
 
+    public function apiReniec(Request $request)
+    {
+        $dni = $request->query('dni', $request->query('doc'));
+
+        return $this->consultarDocumentoApiSunat($dni, 'dni');
+    }
+
+    public function apiRuc(Request $request)
+    {
+        $ruc = $request->query('ruc', $request->query('doc'));
+
+        return $this->consultarDocumentoApiSunat($ruc, 'ruc');
+    }
+
+    public function consultarSunatLegacy(Request $request)
+    {
+        $doc = preg_replace('/\D+/', '', (string) $request->query('doc'));
+        $tipo = strlen($doc) === 11 ? 'ruc' : 'dni';
+
+        return $this->consultarDocumentoApiSunat($doc, $tipo);
+    }
+
+    private function consultarDocumentoApiSunat(?string $documento, string $tipo)
+    {
+        $documento = preg_replace('/\D+/', '', (string) $documento);
+        $tipo = strtolower(trim($tipo));
+
+        $esDni = $tipo === 'dni';
+        $esRuc = $tipo === 'ruc';
+
+        if (($esDni && !preg_match('/^\d{8}$/', $documento)) || ($esRuc && !preg_match('/^\d{11}$/', $documento))) {
+            return response()->json([
+                'status' => false,
+                'success' => false,
+                'message' => $esRuc
+                    ? 'Debe enviar un RUC válido de 11 dígitos.'
+                    : 'Debe enviar un DNI válido de 8 dígitos.',
+            ], 422);
+        }
+
+        $url = $esRuc ? config('apireniec.ruc_url') : config('apireniec.url');
+
+        try {
+            $response = Http::timeout(15)->get($url, [
+                'document' => $documento,
+                'key' => config('apireniec.key'),
+            ]);
+
+            if ($response->failed()) {
+                return response()->json([
+                    'status' => false,
+                    'success' => false,
+                    'message' => $esRuc
+                        ? 'No se pudo consultar el RUC.'
+                        : 'No se pudo consultar el DNI.',
+                ], 422);
+            }
+
+            $payload = $response->json();
+            $estado = $this->extractApireniecEstado($payload);
+            $resultado = $this->extractApireniecResultado($payload);
+            $mensaje = $this->extractApireniecMensaje($payload);
+
+            if (!$estado || empty($resultado)) {
+                return response()->json([
+                    'status' => false,
+                    'success' => false,
+                    'message' => $mensaje ?: ($esRuc
+                        ? 'No se encontro informacion para el RUC ingresado.'
+                        : 'No se encontro informacion en RENIEC.'),
+                ], 422);
+            }
+
+            $normalized = $esRuc
+                ? $this->normalizarRespuestaRuc($resultado, $documento)
+                : $this->normalizarRespuestaDni($resultado, $documento);
+
+            return response()->json([
+                'status' => true,
+                'success' => true,
+                'message' => 'Encontrado',
+                'data' => $normalized,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error consultando documento en APIRENIEC', [
+                'tipo' => $tipo,
+                'documento' => $documento,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'success' => false,
+                'message' => 'Error interno al consultar el documento.',
+            ], 500);
+        }
+    }
+
+    private function extractApireniecEstado($payload): bool
+    {
+        if (is_object($payload)) {
+            $payload = json_decode(json_encode($payload), true);
+        }
+
+        if (!is_array($payload)) {
+            return false;
+        }
+
+        $estado = $payload['estado'] ?? $payload['status'] ?? $payload['success'] ?? $payload['ok'] ?? null;
+
+        return filter_var($estado, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? ((string) $estado !== '');
+    }
+
+    private function extractApireniecResultado($payload)
+    {
+        if (is_object($payload)) {
+            $payload = json_decode(json_encode($payload), true);
+        }
+
+        if (!is_array($payload)) {
+            return null;
+        }
+
+        return $payload['resultado']
+            ?? $payload['data']
+            ?? $payload['response']
+            ?? $payload['result']
+            ?? null;
+    }
+
+    private function extractApireniecMensaje($payload): ?string
+    {
+        if (is_object($payload)) {
+            $payload = json_decode(json_encode($payload), true);
+        }
+
+        if (!is_array($payload)) {
+            return null;
+        }
+
+        $mensaje = $payload['mensaje']
+            ?? $payload['message']
+            ?? $payload['detail']
+            ?? $payload['error']
+            ?? null;
+
+        $mensaje = trim((string) $mensaje);
+
+        return $mensaje !== '' ? $mensaje : null;
+    }
+
+    private function normalizarRespuestaDni($resultado, string $dni): array
+    {
+        if (is_object($resultado)) {
+            $resultado = json_decode(json_encode($resultado), true);
+        }
+
+        $resultado = is_array($resultado) ? $resultado : [];
+
+        $nombres = trim((string) ($resultado['nombres'] ?? $resultado['nombre'] ?? $resultado['name'] ?? ''));
+        $apellidoPaterno = trim((string) ($resultado['apellido_paterno'] ?? $resultado['apellidoPaterno'] ?? ''));
+        $apellidoMaterno = trim((string) ($resultado['apellido_materno'] ?? $resultado['apellidoMaterno'] ?? ''));
+        $nombreCompleto = trim((string) ($resultado['nombre_completo'] ?? $resultado['nombreCompleto'] ?? $resultado['full_name'] ?? ''));
+
+        if ($nombreCompleto === '') {
+            $nombreCompleto = trim(implode(' ', array_filter([$nombres, $apellidoPaterno, $apellidoMaterno])));
+        }
+
+        if ($nombres === '' && $nombreCompleto !== '') {
+            $partes = preg_split('/\s+/', $nombreCompleto, -1, PREG_SPLIT_NO_EMPTY);
+            if (!empty($partes)) {
+                $apellidoMaterno = array_pop($partes);
+                $apellidoPaterno = array_pop($partes) ?? '';
+                $nombres = trim(implode(' ', $partes));
+            }
+        }
+
+        return [
+            'dni' => $dni,
+            'id' => $resultado['id'] ?? $dni,
+            'nombres' => $nombres,
+            'apellido_paterno' => $apellidoPaterno,
+            'apellido_materno' => $apellidoMaterno,
+            'nombre_completo' => $nombreCompleto,
+            'codigo_verificacion' => $resultado['codigo_verificacion'] ?? $resultado['codigoVerificacion'] ?? null,
+            'fecha_nacimiento' => $this->normalizarFechaDocumento($resultado['fecha_nacimiento'] ?? $resultado['fechaNacimiento'] ?? null),
+            'genero' => $this->normalizarGeneroDocumento($resultado['genero'] ?? $resultado['sexo'] ?? null),
+            'first_name' => $nombres,
+            'last_name' => trim(implode(' ', array_filter([$apellidoPaterno, $apellidoMaterno]))),
+            'name' => $nombreCompleto,
+            'direccion' => $resultado['direccion'] ?? $resultado['address'] ?? null,
+        ];
+    }
+
+    private function normalizarRespuestaRuc($resultado, string $ruc): array
+    {
+        if (is_object($resultado)) {
+            $resultado = json_decode(json_encode($resultado), true);
+        }
+
+        $resultado = is_array($resultado) ? $resultado : [];
+
+        $legalName = trim((string) (
+            $resultado['legal_name']
+            ?? $resultado['nombre']
+            ?? $resultado['razon_social']
+            ?? $resultado['razonSocial']
+            ?? $resultado['business_name']
+            ?? $resultado['nombre_o_razon_social']
+            ?? ''
+        ));
+
+        $tradeName = trim((string) (
+            $resultado['trade_name']
+            ?? $resultado['nombre_comercial']
+            ?? $resultado['nombreComercial']
+            ?? $resultado['tradeName']
+            ?? ''
+        ));
+
+        $address = trim((string) (
+            $resultado['address']
+            ?? $resultado['direccion']
+            ?? $resultado['domicilio']
+            ?? $resultado['domicilio_fiscal']
+            ?? ''
+        ));
+
+        return [
+            'ruc' => $resultado['ruc'] ?? $ruc,
+            'legal_name' => $legalName,
+            'trade_name' => $tradeName,
+            'address' => $address,
+            'department' => $resultado['department'] ?? $resultado['departamento'] ?? null,
+            'province' => $resultado['province'] ?? $resultado['provincia'] ?? null,
+            'district' => $resultado['district'] ?? $resultado['distrito'] ?? null,
+            'condition' => $resultado['condition'] ?? $resultado['condicion'] ?? null,
+            'taxpayer_status' => $resultado['taxpayer_status'] ?? $resultado['estado'] ?? $resultado['status'] ?? null,
+            'raw' => $resultado,
+            'name' => $legalName,
+        ];
+    }
+
+    private function normalizarFechaDocumento($fecha): ?string
+    {
+        $fecha = trim((string) $fecha);
+
+        if ($fecha === '') {
+            return null;
+        }
+
+        foreach (['d/m/Y', 'd-m-Y', 'Y-m-d', 'Y/m/d'] as $format) {
+            try {
+                $carbon = \Carbon\Carbon::createFromFormat($format, $fecha);
+                if ($carbon) {
+                    return $carbon->format('Y-m-d');
+                }
+            } catch (\Throwable $e) {
+                // Continuar probando formatos
+            }
+        }
+
+        try {
+            return \Carbon\Carbon::parse($fecha)->format('Y-m-d');
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function normalizarGeneroDocumento($genero): ?string
+    {
+        $genero = strtoupper(trim((string) $genero));
+
+        if ($genero === '') {
+            return null;
+        }
+
+        if (in_array($genero, ['M', 'MASCULINO', 'HOMBRE'], true)) {
+            return 'MASCULINO';
+        }
+
+        if (in_array($genero, ['F', 'FEMENINO', 'MUJER'], true)) {
+            return 'FEMENINO';
+        }
+
+        return $genero;
+    }
+
     public function confirmarPedido(Request $request)
     {
         try {
@@ -1759,7 +2047,7 @@ class SaleController extends Controller
             // 1. Buscar la venta
             $venta = Sale::findOrFail($sale_id);
 
-            if ($venta->deleted !== 0) {
+            if ((int) $venta->deleted !== 0) {
                 return response()->json([
                     'status' => false,
                     'error' => 'La venta ya fue anulada anteriormente.'

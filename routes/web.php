@@ -105,6 +105,8 @@ Route::group(['middleware' => 'auth'], function () {
 
 
     //Ventas
+    Route::get('/api/reniec', [SaleController::class, 'apiReniec'])->name('api.reniec');
+    Route::get('/api/ruc', [SaleController::class, 'apiRuc'])->name('api.ruc');
     Route::get('/sunat/consultar', [SaleController::class, 'consultarSunat']);
     Route::get('restaurante', [SaleController::class, 'restaurante'])->name('sales.restaurante');
     Route::get('/api/products-by-category/{categoryId}', [SaleController::class, 'getProductsByCategory'])->name('sales.getProductsByCategory');
