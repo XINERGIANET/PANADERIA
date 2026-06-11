@@ -55,6 +55,17 @@
             display: block;
         }
 
+        .logo-wrap {
+            width: 100%;
+            max-width: 205px;
+        }
+
+        .logo-wrap svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
         .company-name {
             font-size: 18px;
             font-weight: 700;
@@ -258,8 +269,8 @@
         return rtrim(rtrim($formatted, '0'), '.');
     };
 
-    $logoTag = $logoDataUri
-        ? '<img class="logo" src="' . $logoDataUri . '" alt="Logo">'
+    $logoTag = $logoInlineSvg
+        ? '<div class="logo-wrap">' . $logoInlineSvg . '</div>'
         : '<div style="border:1px solid #ccc; padding:20px; text-align:center; font-weight:700;">SIN LOGO</div>';
     $companyAddressHtml = implode('<br>', array_map(function ($line) {
         return e($line);

@@ -914,7 +914,7 @@ class SaleController extends Controller
             $qrPayload = $this->buildQrPayload($companyRuc, $voucherType, $seriesNumber, $issueDate, $clientDocument, $total, $igv);
             $qrDataUri = $this->generateQrDataUri($qrPayload);
 
-            $logoDataUri = $this->getLogoDataUri();
+            $logoInlineSvg = $this->getLogoInlineSvg();
 
             $pdf = Pdf::loadView('sales.pdf.a4', compact(
                 'sale',
@@ -932,7 +932,7 @@ class SaleController extends Controller
                 'igv',
                 'issueDate',
                 'detraction',
-                'logoDataUri',
+                'logoInlineSvg',
                 'qrPayload',
                 'qrDataUri'
             ))->setPaper('A4', 'portrait');
@@ -968,12 +968,19 @@ class SaleController extends Controller
         ];
     }
 
-    private function getLogoDataUri(): ?string
+    private function getLogoInlineSvg(): ?string
     {
-        $logoPath = base_path('assets/icon/logo.svg');
+        $candidates = [
+            base_path('assets/icon/logo.svg'),
+            __DIR__ . '/../../../assets/icon/logo.svg',
+            dirname(base_path()) . '/PANADERIA/assets/icon/logo.svg',
+        ];
 
-        if (file_exists($logoPath)) {
-            return 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath));
+        foreach ($candidates as $logoPath) {
+            $realPath = realpath($logoPath);
+            if ($realPath && is_readable($realPath)) {
+                return file_get_contents($realPath);
+            }
         }
 
         return null;
