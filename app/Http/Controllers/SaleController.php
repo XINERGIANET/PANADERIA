@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Client;
 use App\Models\Location;
+use App\Models\LocationPrice;
 use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Payment;
@@ -1480,13 +1481,19 @@ class SaleController extends Controller
     private function reducirStockProducto($productId, $quantity, $sedeId = null)
     {
         try {
-            $product = Product::find($productId);
-            if ($product) {
-                // Reducir el stock general del producto
-                $newStock = $product->quantity - $quantity;
-                $product->update(['quantity' => max(0, $newStock)]);
+            $locationPrice = LocationPrice::where('product_id', $productId)
+                ->when($sedeId, function ($q) use ($sedeId) {
+                    $q->where('location_id', $sedeId);
+                })
+                ->first();
+
+            if ($locationPrice) {
+                $newStock = max(0, (float) $locationPrice->quantity - (float) $quantity);
+                $locationPrice->update(['quantity' => $newStock]);
 
                 Log::info("Stock reducido para producto ID {$productId}: -{$quantity}. Stock actual: {$newStock}");
+            } else {
+                Log::warning("No se encontró stock por sede para el producto ID {$productId} al reducir.");
             }
         } catch (\Exception $e) {
             Log::error("Error al reducir stock del producto {$productId}: " . $e->getMessage());
@@ -2192,7 +2199,8 @@ class SaleController extends Controller
                 foreach ($detalles as $detalle) {
                     $this->restaurarStockProducto(
                         $detalle->product_id,
-                        $detalle->quantity
+                        $detalle->quantity,
+                        $venta->location_id
                     );
                 }
             });
@@ -2276,11 +2284,25 @@ class SaleController extends Controller
     }
 
 
-    private function restaurarStockProducto($productId, $cantidadRestaurar)
+    private function restaurarStockProducto($productId, $cantidadRestaurar, $sedeId = null)
     {
-        $product = Product::find($productId);
-        $product->quantity += $cantidadRestaurar;
-        $product->save();
+        try {
+            $locationPrice = LocationPrice::where('product_id', $productId)
+                ->when($sedeId, function ($q) use ($sedeId) {
+                    $q->where('location_id', $sedeId);
+                })
+                ->first();
+
+            if (!$locationPrice) {
+                Log::warning("No se encontró stock por sede para restaurar producto ID {$productId}");
+                return;
+            }
+
+            $locationPrice->quantity = (float) $locationPrice->quantity + (float) $cantidadRestaurar;
+            $locationPrice->save();
+        } catch (\Throwable $e) {
+            Log::error("Error al restaurar stock del producto {$productId}: " . $e->getMessage());
+        }
     }
 
     public function getInvoiceById($id)
