@@ -731,15 +731,10 @@ $colors = ['btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'bt
         appendTo: '#abrirMesaModal',
         select: function(event, ui) {
             // Agregar producto directamente a la tabla cuando se selecciona
-            if (ui.item.quantity > 0) {
-                handleProductClick(ui.item.id, ui.item.name, ui.item.unit_price, ui.item.quantity);
-                // Limpiar el campo de búsqueda
-                $('#search-product').val('');
-                $('#product_id').val('');
-            } else {
-                alert('Este producto no tiene stock disponible.');
-                $('#search-product').val('');
-            }
+            handleProductClick(ui.item.id, ui.item.name, ui.item.unit_price, ui.item.quantity);
+            // Limpiar el campo de búsqueda
+            $('#search-product').val('');
+            $('#product_id').val('');
             return false; // Previene que se llene el input con el valor
         },
     }).autocomplete("instance")._renderItem = function(ul, item) {
@@ -991,35 +986,13 @@ $colors = ['btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'bt
     }
 
     function handleProductClick(productId, productName, unitPrice, stock) {
-        // Delegate state changes to agregarProductoClick to avoid double-inserts.
-        // We still perform a quick stock check here when stock is provided.
-        const idStr = String(productId);
-        const idx = selectedProducts.findIndex(p => String(p.id) === idStr);
+        agregarProductoClick({
+            id: productId,
+            precio: unitPrice,
+            nombre: productName,
+            stock: stock
+        });
 
-        if (idx > -1) {
-            const currentQty = Number(selectedProducts[idx].cantidad) || 0;
-            if (typeof stock !== 'undefined' && currentQty >= stock) {
-                alert(`Stock insuficiente. Solo hay ${stock} unidades disponibles.`);
-                return;
-            }
-            // Request agregarProductoClick to increment
-            agregarProductoClick({
-                id: productId,
-                precio: unitPrice,
-                nombre: productName,
-                stock: stock
-            });
-        } else {
-            // Add new product via agregarProductoClick (it will update selectedProducts and re-render)
-            agregarProductoClick({
-                id: productId,
-                precio: unitPrice,
-                nombre: productName,
-                stock: stock
-            });
-        }
-
-        // Limpiar campos de búsqueda como antes
         $('#search-product').val('');
         $('#product_id').val('');
     }
@@ -1056,7 +1029,7 @@ $colors = ['btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'bt
                     <td class="text-center">
                         <div class="input-group" style="width: 120px; margin: 0 auto;">
                           <input id="quantity-${productTableCounter}" type="number" class="form-control form-control-sm text-center quantity-input" 
-                              value="${cantidad}" min="1" max="${maxStock}" 
+                              value="${cantidad}" min="1"  
                               onchange="validateQuantity(this, ${maxStock}, ${precio}); updateSubtotal(${productTableCounter - 1});"
                               name="products[${id}][cantidad]">
                         </div>
@@ -1091,7 +1064,7 @@ $colors = ['btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'bt
                         <td class="text-center">
                                 <div class="input-group" style="width: 120px; margin: 0 auto;">
                             <input id="quantity-${productTableCounter}" type="number" class="form-control form-control-sm text-center quantity-input" 
-                                    value="1" min="1" max="${stock}" 
+                                    value="1" min="1"  
                                     onchange="validateQuantity(this, ${stock}, ${unitPrice}); updateSubtotal(${productTableCounter - 1});"
                                     name="products[${productId}][cantidad]">
                                 </div>
@@ -1116,9 +1089,6 @@ $colors = ['btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'bt
 
         if (isNaN(value) || value < 1) {
             value = 1;
-        } else if (value > maxStock) {
-            value = maxStock;
-            alert(`Stock máximo: ${maxStock} unidades`);
         }
 
         input.value = value;
@@ -1235,17 +1205,12 @@ $colors = ['btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'bt
     }
 
     function agregarProductoClick(producto) {
-        // Actualiza el array selectedProducts (UI ya actualiza la tabla) y programa el envío completo
         const idStr = String(producto.id);
         const idx = selectedProducts.findIndex(p => String(p.id) === idStr);
         const stock = producto.stock;
 
         if (idx > -1) {
             const current = Number(selectedProducts[idx].cantidad) || 0;
-            if (typeof stock !== 'undefined' && current >= stock) {
-                alert(`Stock insuficiente. Solo hay ${stock} unidades disponibles.`);
-                return;
-            }
             selectedProducts[idx].cantidad = toNum(current + 1, 3);
         } else {
             selectedProducts.push({
@@ -1257,7 +1222,6 @@ $colors = ['btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'bt
             });
         }
 
-        // Re-renderizar tabla desde selectedProducts
         addProductToTable();
         scheduleEnviarTabla();
     }
@@ -1653,3 +1617,9 @@ $colors = ['btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'bt
     }
 </script>
 @endsection
+
+
+
+
+
+

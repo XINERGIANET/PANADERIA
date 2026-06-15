@@ -270,15 +270,10 @@ $invoices_enabled = auth()->user()->location->invoices_enabled == 1;
         appendTo: '.container-fluid',
         select: function(event, ui) {
             // Agregar producto directamente a la tabla cuando se selecciona
-            if (ui.item.stock > 0) {
-                handleProductClick(ui.item.id, ui.item.name, ui.item.unit_price, ui.item.stock, ui.item.category);
+            handleProductClick(ui.item.id, ui.item.name, ui.item.unit_price, ui.item.stock, ui.item.category);
                 // Limpiar el campo de búsqueda
                 $('#search-product').val('');
                 $('#product_id').val('');
-            } else {
-                alert('Este producto no tiene stock disponible.');
-                $('#search-product').val('');
-            }
             return false; // Previene que se llene el input con el valor
         },
     }).autocomplete("instance")._renderItem = function(ul, item) {
@@ -384,15 +379,10 @@ $invoices_enabled = auth()->user()->location->invoices_enabled == 1;
             const quantityInput = existingRow.querySelector('.quantity-input');
             const currentQuantity = parseInt(quantityInput.value);
 
-            if (currentQuantity < stock) {
-                const newQuantity = currentQuantity + 1;
-                quantityInput.value = newQuantity;
-                updateRowSubtotal(existingRow, unitPrice, newQuantity);
-                updateTotal();
-            } else {
-                // Mostrar alerta de stock insuficiente
-                alert(`Stock insuficiente. Solo hay ${stock} unidades disponibles.`);
-            }
+            const newQuantity = currentQuantity + 1;
+            quantityInput.value = newQuantity;
+            updateRowSubtotal(existingRow, unitPrice, newQuantity);
+            updateTotal();
         } else {
             // Agregar nueva fila
             addProductToTable(productId, productName, unitPrice, stock, category);
@@ -424,7 +414,7 @@ $invoices_enabled = auth()->user()->location->invoices_enabled == 1;
             <td class="text-center">
                 <div class="input-group" style="width: 120px; margin: 0 auto;">
               <input type="number" class="form-control form-control-sm text-center quantity-input" 
-                  value="1" min="1" max="${stock}" 
+                  value="1" min="1"
                   onchange="validateQuantity(this, ${stock}, ${unitPrice})"
                   name="products[${productId}][cantidad]">
                 </div>
@@ -449,9 +439,6 @@ $invoices_enabled = auth()->user()->location->invoices_enabled == 1;
 
         if (isNaN(value) || value < 1) {
             value = 1;
-        } else if (value > maxStock) {
-            value = maxStock;
-            alert(`Stock máximo: ${maxStock} unidades`);
         }
 
         input.value = value;
@@ -1881,3 +1868,8 @@ $invoices_enabled = auth()->user()->location->invoices_enabled == 1;
     }
 </script>
 @endsection
+
+
+
+
+
