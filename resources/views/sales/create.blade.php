@@ -332,31 +332,18 @@ $invoices_enabled = auth()->user()->location->invoices_enabled == 1;
                         productElement.className = "btn btn-outline-success btn-sm";
                         productElement.type = "button";
 
-                        // Mostrar nombre del producto con stock y precio
+                        // Mostrar solo el nombre; el stock se conserva para validaciones internas
                         const stock = producto.stock || 0;
                         const precio = parseFloat(producto.unit_price || 0).toFixed(2);
 
                         productElement.innerHTML = `
                             <div class="text-start">
-                                <div class="fw-bold">${producto.name.toUpperCase()} (${stock})</div>
+                                <div class="fw-bold">${producto.name.toUpperCase()}</div>
                             </div>
                         `;
 
-                        // Deshabilitar si no hay stock
-                        if (stock <= 0) {
-                            productElement.disabled = true;
-                            productElement.className = "btn btn-outline-secondary btn-sm";
-                            productElement.innerHTML = `
-                                <div class="text-start">
-                                    <div class="fw-bold text-muted">${producto.name.toUpperCase()} (Sin Stock)</div>
-                                </div>
-                            `;
-                        }
-
                         productElement.onclick = function() {
-                            if (stock > 0) {
-                                handleProductClick(producto.id, producto.name, producto.unit_price, stock, producto.category);
-                            }
+                            handleProductClick(producto.id, producto.name, producto.unit_price, stock, producto.category);
                         };
 
                         productCol.appendChild(productElement);
