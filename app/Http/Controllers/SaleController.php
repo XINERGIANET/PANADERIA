@@ -714,17 +714,47 @@ class SaleController extends Controller
             ];
         } else {
             // Usar los detalles específicos de la venta
-            $i = 1;
-            foreach ($details as $detail) {
-                $price = round($detail->unit_price, 2);
-                $cost = round($price / 1.18, 2); // Precio sin IGV
-                $quantity = $detail->quantity;
-                $totalLine = round($price * $quantity, 2);
+            $lines = [];
+            $subtotalAcumulado = 0.0;
+            $igvAcumulado = 0.0;
+            $detailsCount = $details->count();
+
+            foreach ($details as $index => $detail) {
+                $quantity = round((float) $detail->quantity, 6);
+
+                if ($quantity <= 0) {
+                    return [
+                        'status' => false,
+                        'console' => 'No se puede emitir la factura: existe un item con cantidad invalida.'
+                    ];
+                }
+
+                $totalLine = round((float) ($detail->subtotal ?? 0), 2);
+                if ($totalLine <= 0) {
+                    $totalLine = round((float) $detail->unit_price * $quantity, 2);
+                }
+
                 $subtotalLine = round($totalLine / 1.18, 2);
+
+                if ($index === $detailsCount - 1) {
+                    $subtotalLine = round($subtotal - $subtotalAcumulado, 2);
+                }
+
                 $igvLine = round($totalLine - $subtotalLine, 2);
 
-                $data['documentBody']['cac:InvoiceLine'][] = [
-                    'cbc:ID' => ['_text' => $i],
+                if ($index === $detailsCount - 1) {
+                    $igvLine = round($igv - $igvAcumulado, 2);
+                    $subtotalLine = round($totalLine - $igvLine, 2);
+                }
+
+                $unitValue = round($subtotalLine / $quantity, 10);
+                $unitPrice = round($totalLine / $quantity, 10);
+
+                $subtotalAcumulado += $subtotalLine;
+                $igvAcumulado += $igvLine;
+
+                $lines[] = [
+                    'cbc:ID' => ['_text' => $index + 1],
                     'cbc:InvoicedQuantity' => [
                         '_attributes' => ['unitCode' => 'NIU'],
                         '_text' => $quantity
@@ -737,7 +767,7 @@ class SaleController extends Controller
                         'cac:AlternativeConditionPrice' => [
                             'cbc:PriceAmount' => [
                                 '_attributes' => ['currencyID' => 'PEN'],
-                                '_text' => $price
+                                '_text' => $unitPrice
                             ],
                             'cbc:PriceTypeCode' => ['_text' => '01']
                         ]
@@ -775,13 +805,20 @@ class SaleController extends Controller
                     'cac:Price' => [
                         'cbc:PriceAmount' => [
                             '_attributes' => ['currencyID' => 'PEN'],
-                            '_text' => $cost
+                            '_text' => $unitValue
                         ]
                     ]
                 ];
-
-                $i++;
             }
+
+            if (round($subtotalAcumulado, 2) !== round($subtotal, 2) || round($igvAcumulado, 2) !== round($igv, 2)) {
+                return [
+                    'status' => false,
+                    'console' => 'No se puede emitir la factura: los importes por item no cuadran con el total del comprobante.'
+                ];
+            }
+
+            $data['documentBody']['cac:InvoiceLine'] = $lines;
         }
 
         // Enviar a SUNAT
